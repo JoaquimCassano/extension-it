@@ -1,6 +1,8 @@
 import openai, os
 from rich import print as rprint
+from rich.prompt import Prompt
 from pydantic import BaseModel
+import subprocess
 
 class File(BaseModel):
   path: str
@@ -14,12 +16,33 @@ class ResponseFormat(BaseModel):
 
 client = openai.OpenAI()
 
+def install_extension(app_name: str):
+  choice = Prompt.ask(f"Do you want to install the extension '{app_name}' now? (y/n)", choices=["y", "n"], default="y")
+  if choice == "y":
+    rprint(f"[blue]🔄 Installing extension '{app_name}'...[/blue]")
+    try:
+      package_manager = Prompt.ask("Which package manager do you use?", choices=["npm", "yarn", "pnpm"], default="npm")
+      match package_manager:
+        case "npm":
+          subprocess.run(["npx", "vici", "build"], check=True, cwd=app_name)
+        case "yarn":
+          subprocess.run(["yarn", "vici", "build"], check=True, cwd=app_name)
+        case "pnpm":
+          subprocess.run(["pnpm", "vici", "build"], check=True, cwd=app_name)
+      rprint(f"[green]✅ Extension '{app_name}' installed successfully![/green]")
+    except subprocess.CalledProcessError as e:
+      rprint(f"[red]❌ Failed to install extension '{app_name}'. Please install it manually.[/red]")
+      rprint(f"[red]Error details: {e}[/red]")
+  else:
+    rprint(f"[yellow]⚠️ Skipped installation. You can install the extension '{app_name}' later.[/yellow]")
+
 
 
 def handle_files(response:ResponseFormat):
-  os.makedirs(response.appName, exist_ok=True)
+  appName = response.appName.replace(" ", "_").lower()
+  os.makedirs(appName, exist_ok=True)
   for file in response.files:
-    file_path = os.path.join(response.appName, file.path)
+    file_path = os.path.join(appName, file.path)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     if file_path.split(".")[-1] in ["png"]:
       with open("assets/placeholder_image.png", 'rb') as f:
@@ -28,7 +51,7 @@ def handle_files(response:ResponseFormat):
       continue
     with open(file_path, 'w') as f:
       f.write(file.content)
-  rprint(f"[green]✅ Generated {len(response.files)} files in '{response.appName}' directory.[/green]")
+  rprint(f"[green]✅ Generated {len(response.files)} files in '{appName}' directory.[/green]")
   if response.configurationNeeded:
     rprint("[yellow]⚠️ WARNING: Some configuration is needed. Please check the notes for details.[/yellow]")
     rprint(f"[blue]📝 Notes:\n{response.notes}[/blue]")
@@ -39,7 +62,7 @@ def handle_files(response:ResponseFormat):
 def generate_code(prompt, debug_mode:bool=False):
   rprint(f"[blue]🤖 Generating code for prompt: {prompt}[/blue]")
   instructions = f"""
-  You are an expert software engineer. Your role is to generate a Vicinae (or raycast) extension based on the user's instruction. The extension should be functional and ready to use (beside some configuration of keys etc.). If the extension needs an image, use the filename img.png and the content will be "placeholder". Follow these guidelines:
+  You are an expert software engineer. Your role is to generate a Vicinae (or raycast) extension based on the user's instruction. The extension should be functional and ready to use (beside some configuration of keys etc.). Ensure the UI and UX work seamlessly, and everything the user expects can be done. Follow these guidelines:
   Context:
   {open('instructions/vicinae-instructions.txt', 'r').read()}
   """
@@ -51,7 +74,7 @@ def generate_code(prompt, debug_mode:bool=False):
         "content": "Generate a Vicinae extension based on this description and instructions:\n" + prompt
       }
     ],
-    reasoning={"effort": "minimal"},
+    reasoning={"effort": "low"},
     instructions=instructions,
     text_format=ResponseFormat,
   )
@@ -69,3 +92,4 @@ if __name__ == "__main__":
   rprint("[blue]🤖 Generating code...[/blue]")
   response = generate_code(user_prompt, debug_mode=False)
   handle_files(response)
+  install_extension(response.appName.replace(" ", "_").lower())
