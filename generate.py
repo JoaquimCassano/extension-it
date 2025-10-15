@@ -39,7 +39,7 @@ def install_extension(app_name: str):
 
 
 def handle_files(response:ResponseFormat):
-  appName = response.appName.replace(" ", "_").lower()
+  appName = f"output/{response.appName.replace(" ", "_").lower()}"
   os.makedirs(appName, exist_ok=True)
   for file in response.files:
     file_path = os.path.join(appName, file.path)
@@ -87,9 +87,10 @@ def generate_code(prompt, debug_mode:bool=False):
   print(response)
   return response.output_parsed
 
+
 if __name__ == "__main__":
   user_prompt = input("Enter your prompt: ")
   rprint("[blue]🤖 Generating code...[/blue]")
   response = generate_code(user_prompt, debug_mode=False)
   handle_files(response)
-  install_extension(response.appName.replace(" ", "_").lower())
+  install_extension(f"output/{response.appName.replace(' ', '_').lower()}")
