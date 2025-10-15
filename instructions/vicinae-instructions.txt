@@ -1,0 +1,9197 @@
+# guides
+================================================
+FILE: src/app/extensions/api/page.mdx
+================================================
+# Extension API Reference
+
+This page will host the complete API reference for the [@vicinae/api](https://www.npmjs.com/package/@vicinae/api?activeTab=readme) package used to develop extensions.
+
+<Warning>
+For now, we don't offer a proper API reference. You will have to rely on some of the [Raycast documentation](https://developers.raycast.com/api-reference/user-interface) (for what we implement), or the package typings directly (which are very much a work in progress at the moment).
+</Warning>
+
+
+
+================================================
+FILE: src/app/extensions/create/page.mdx
+================================================
+# Create your first extension
+
+This page explains how to create your first extension.
+
+## Requirements
+
+In order to develop /extensions, you will need:
+
+- A working installation of NodeJS (>=20 recommended). If you are on Linux your package manager may have handled that for you already.
+- A npm compatible package manager such as `npm` or `pnpm`. We always use `npm` in our examples.
+- Basic knowledge of [TypeScript](https://www.typescriptlang.org/) and [React](https://react.dev/). No need to be an expert in order to build simple /extensions.
+
+## Create Your Extension
+
+The most straightforward way to create an extension is to use the [Create Extension](vicinae:///extensions/vicinae/extensionseloper/create) command from within Vicinae:
+
+![](/extensions/create-extension.webp)
+
+Fill in all the fields, then press `Shift + Enter` to create the extension:
+
+![](/extensions/create-extension-success.webp)
+
+As instructed, move to your newly created extension directory and install the required dependencies:
+
+```bash
+npm install
+```
+
+Once that is done, start your extension in development mode (Vicinae needs to be running):
+
+```bash
+npm run dev
+```
+
+If all is going well, the command should output something like this:
+
+![](/extensions/extension-dev-logs.webp)
+
+Your extension should now come up when searching for it in the root search:
+
+![](/extensions/first-extension-root.webp)
+
+And then simply open it for the first time:
+
+![](/extensions/first-extension-running.webp)
+
+<Note>
+Notice the `(Dev)` suffix in the navigation title. This means you are currently running the command as part of a development session.
+In this mode, the development version of React will be used and the command will output its logs inside the console from where you started the session.
+<br /> In development mode, the extension is also updated every time you make a change to any file.
+</Note>
+
+
+## Where to go from here
+
+- [Learn about the file structure](/extensions/file-structure)
+- [Learn about the manifest file](/extensions/manifest)
+- [Explore the API reference](/extensions/api)
+
+
+
+
+================================================
+FILE: src/app/extensions/file-structure/page.mdx
+================================================
+# File Structure
+
+This page describes the file structure of a Vicinae extension.
+
+A valid Vicinae extension is a directory containing at least two things:
+
+- a manifest file named `package.json`, which is essentially a regular `package.json` file with Vicinae specific additions to it.
+- one or more command entrypoints under the `src` subdirectory, such as `src/command_name.tsx`. They need to map to a valid command name inside the manifest.
+
+This is what a typical extension directory looks like:
+
+```bash
+my-first-extension
+    ├── assets
+    │   └── extension_icon.webp
+    ├── package.json
+    ├── package-lock.json
+    ├── README.md
+    ├── src
+    │   └── my-first-command.tsx
+    └── tsconfig.json
+```
+
+<Note>
+We may add configuration files for more quality of life Javascript tooling in the future (eslint, prettier, etc...)
+</Note>
+
+
+## Source directory
+
+The source directory should contain all your source files (not only command entrypoints).
+
+For each command defined in the extension manifest, you need to have a corresponding entrypoint directly under `src`.
+
+For a command named `my-command`, you need a corresponding `src/my-command.tsx` or `src/my-command.ts` entrypoint.
+
+<Note>
+You should use the `.ts` extension for no-view commands and the `.tsx` extension for view commands.
+Using `.tsx` for no-view commands is still supported but not the other way around.
+</Note>
+
+## Assets directory
+
+The `assets` directory can contain icons that will be packaged into the extension bundle. All assets can be referenced at runtime and used as images where Vicinae expects them.  This is also where extension or command icons referenced in the manifest should be placed.
+
+## Other files
+
+- `node_modules`: dependencies required for the extension to run. Do not make any manual change to this directory.
+- `package-lock.json`: locked version of the dependencies to install: do not edit directly.
+
+
+
+================================================
+FILE: src/app/extensions/introduction/page.mdx
+================================================
+# Introduction
+
+Vicinae is typically extended using its React/TypeScript API, which allows you to focus on your extension while offloading all the complex UI rendering to the C++ core.
+
+This page explains this design choice and gives a sneak peek at what extension code looks like. For a step-by-step guide on creating an extension, see the [create extension](/extensions/create) page.
+
+![](/extensions/code.webp)
+
+## Why TypeScript?
+
+TypeScript is a well-established scripting language with clean syntax and, most importantly, a thriving ecosystem around it. It's very easy to interface with almost any external API by installing a TypeScript SDK they provide.
+
+Since we use [NodeJS](https://nodejs.org/en), we also support all the regular node APIs you might want to use. JavaScript is actually much faster than most people think (unlike certain other popular scripting languages) and can be very efficient when used for the right things.
+
+The asynchronous model also makes it well-suited for fetching and transforming external data, presenting it, and so on—which is typically what most extensions will do.
+
+## Why React?
+
+Since we're dealing with UI most of the time, we'd need a state management library anyway. React is a pure JavaScript library that allows developers to write declarative UI code, which is dramatically easier than having to update elements imperatively.
+
+When a piece of state changes, the component rerenders, and it's up to the renderer (in this case, the Vicinae process) to ensure everything is handled gracefully and efficiently. As an extension developer, you don't have to deal with any of that. You simply use and update the provided UI components as needed, and the rest is handled for you.
+
+React is also, like TypeScript, very well-established and widely known among developers.
+
+<Note>
+Although React is typically associated with web development (since that's its most common use case), the React library is platform-agnostic. A renderer can be written for any platform—even for the [terminal](https://github.com/vadimdemedes/ink)!
+</Note>
+
+## Where's the browser at?
+
+There is **no browser** backing the Vicinae extension ecosystem. No browser, no Electron, no HTML, no CSS...
+
+It's simply pure JavaScript producing a serialized representation of the UI tree, which is then sent to the C++ Vicinae process and rendered as native UI from there. Conceptually, this is very similar to what [React Native](https://reactnative.dev/) does.
+
+All you need is a JavaScript runtime to execute JavaScript on the server-side (we use `node`), and everything works smoothly and efficiently.
+
+## Code example
+
+If you write this:
+
+```tsx
+import { ActionPanel, Action, List, Icon } from '@vicinae/api';
+import { fruits } from './data';
+
+export default function FruitList() {
+	return (
+		<List isShowingDetail searchBarPlaceholder={'Search fruits...'}>
+			<List.Section title="Fruits">
+				{fruits.map(fruit => (
+					<List.Item
+						key={fruit.emoji}
+						title={fruit.name}
+						icon={fruit.emoji}
+						detail={<List.Item.Detail markdown={fruit.description} />}
+						actions={
+							<ActionPanel>
+								<Action.CopyToClipboard
+									title="Copy emoji"
+									content={fruit.emoji}
+								/>
+							</ActionPanel>
+						}
+					/>
+				))}
+			</List.Section>
+		</List>
+	);
+}
+```
+
+You get this:
+
+![](/extensions/intro-example.webp)
+
+Search automatically works, markdown is automatically formatted, life's great :)
+
+## Raycast compatibility
+
+Most of the extension stuff is inspired by the way [Raycast](https://developers.raycast.com/) does it, and our long term goal is to be compatible with most existing Raycast extensions.
+
+For this reason, our API follows the Raycast API very closely but also offers exclusive APIs. Our goal is to be our own thing, not copy everything Raycast is doing.
+
+<Note>
+Since Vicinae is open source and community-driven , we tend to prioritize API features that most users want to see implemented first.
+</Note>
+
+
+
+================================================
+FILE: src/app/extensions/manifest/page.mdx
+================================================
+# Manifest
+
+The extension manifest is an extension of the regular `package.json` format found across most npm-managed Javascript projects.
+
+It contains information about the dependencies to install, but also about extension specific stuff, such as what commands the extension exports, with what preferences, with what arguments, etc...
+
+<Warning>
+Our manifest documentation is still incomplete. You can refer to the [Raycast documentation](https://developers.raycast.com/information/manifest) for an exhaustive list of supported keys, as we share the same manifest format.
+None of what's discussed here is specific to Vicinae.
+</Warning>
+
+## Anatomy of a manifest
+
+This is what the manifest from the [create extension page](/extensions/create) looks like:
+
+```json
+{
+  "name": "my-first-extension",
+  "title": "My First Extension",
+  "description": "This is my very first extension",
+  "categories": [],
+  "license": "MIT",
+  "author": "aurelle",
+  "contributors": [],
+  "pastContributors": [],
+  "icon": "extension_icon.webp",
+  "commands": [
+    {
+      "name": "my-first-command",
+      "title": "My First Command",
+      "subtitle": "My first subtitle",
+      "description": "My first command description",
+      "mode": "view"
+    }
+  ],
+  "preferences": [],
+  "scripts": {
+    "build": "vici build",
+    "dev": "vici develop"
+  },
+  "dependencies": {
+    "@vicinae/api": "^0.8.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
+```
+
+Some fields are particularly interesting to us:
+
+- `name`: the identifier of the extension, which should be in a sluggified format.
+- `title`: the display name of an extension, which will be shown to users.
+- `author`: the author of the extension. Needs to be a single username. This is used for a variety of things inside Vicinae.
+- `icon` is used to resolve the extension's icon at runtime. Vicinae will try find it relative to the extension's `assets` directory. This same thing applies to command icons, if any is specified.
+- `commands` lists all the available commands for this extension. The `name` key for each command should map to a proper command entrypoint under `src`. In this case, `src/my-first-command.tsx` is expected. At least one command should be specified to make it a valid extension.
+
+## Dealing with preferences
+
+### Anatomy of a preference object
+
+An extension and every one of its commands can declare a set of preferences that they expect to be set before they can be run.
+
+This can be useful to require the user to provide an access token, tweak the behaviour of some command, and more...
+
+A preference object looks like this:
+
+```json
+{
+	"name": "access-token",
+	"title": "Access Token",
+	"description": "The access token required to access the service",
+	"required": true,
+	"type": "password"
+}
+```
+
+- `name` is the id of the preference, which should remain in a slugified form
+- `title` is the display name of the preference - shown to users
+- `required` if a preference is required and has no default value, Vicinae will explicitly ask the user to supply it before a command can be started.
+- `type` is the type of preference. Right now we mainly support `textfield`, `password` and `dropdown`.
+
+If a preference is of type `dropdown` an additional `data` field is expected:
+
+```json
+{
+  "name": "artwork",
+  "title": "Artwork Style",
+  "description": "Choose the preferred artwork style for Pokémon.",
+  "required": false,
+  "type": "dropdown",
+  "default": "official",
+  "data": [
+	{
+	  "title": "Official Artwork",
+	  "value": "official"
+	},
+	{
+	  "title": "Pixel Art",
+	  "value": "pixel"
+	}
+  ]
+}
+```
+
+### Add preferences
+
+To specifiy a set of extension preferences, just fill in the top-level `preferences` array with as many preference objects as you want.
+
+You can do the same for each command inside `commands` to specificy command-local preferences.
+
+<Note>
+Extension preferences are shared across all commands of that same extension whereas command preferences are only considered for the command it's specified for.
+</Note>
+
+
+
+
+================================================
+FILE: src/app/extensions/no-view-command/page.mdx
+================================================
+# Create a no-view command
+
+In Vicinae, a no-view command is a command that directly executes from within the root search, without pushing new UI.
+
+## Declaring a no-view command
+
+In order to declare a command as a no-view command, you need to set the `mode` of the command to `no-view` inside the manifest:
+
+```json
+{
+  "name": "my-first-command",
+  "title": "My First Command",
+  "subtitle": "My first subtitle",
+  "description": "My first command description",
+  "mode": "no-view"
+}
+```
+
+This command declaration expects the presence of a corresponding `src/my-first-command.ts` entrypoint file.
+
+## No-View Lifecycle
+
+When a no-view command is launched from the root search, the code inside the function starts executing immediately.
+The command is unloaded when the function returns **or** if another command is launched (as the command execution is non blocking).
+
+<Warning>
+no-view commands are not meant to execute long-running logic. As of now, we don't provide a way for extensions to do this outside of using external daemons (not recommended).
+However, we will probably add something in the future.
+</Warning>
+
+## No-view command implementation
+
+From the entrypoint, all you need to do is to export an async function as the default export:
+
+```ts {{ title: 'my-first-command.tsx' }}
+import { showToast } from '@vicinae/api';
+
+export default async function MyFirstCommand() {
+	await showToast({ title: 'Hello from no-view command!' });
+}
+```
+
+<Note>
+Make sure to properly `await` asynchronous API calls. Otherwise, the command might be unloaded before the promises resolve.
+</Note>
+
+<Warning>
+Any attempt to use navigation features from no-view commands will be met with an error. You can, however, use other Vicinae APIs all the same.
+</Warning>
+
+
+
+================================================
+FILE: src/app/extensions/view-command/page.mdx
+================================================
+# Create a view command
+
+In Vicinae, a view command is a command that pushes new UI views on the navigation stack.
+
+## Declaring a view command
+
+In order to declare a command as a view command, you need to set the `mode` of the command to `view` inside the manifest:
+
+```json
+{
+  "name": "my-first-command",
+  "title": "My First Command",
+  "subtitle": "My first subtitle",
+  "description": "My first command description",
+  "mode": "view"
+}
+```
+
+This command declaration expects the presence of a corresponding `src/my-first-command.tsx` entrypoint file.
+
+<Note>
+Be careful about the file extension: you need to use `.tsx` for view commands as we are dealing with TSX.
+</Note>
+
+## View command implementation
+
+From the entrypoint, all you need to do is to export a React component as the default export:
+
+```tsx {{ title: 'my-first-command.tsx' }}
+import { Detail, ActionPanel, Action, showToast } from '@vicinae/api';
+
+export default function MyFirstCommand() {
+	return (
+		<Detail
+			markdown={md}
+			actions={
+				<ActionPanel>
+					<Action
+						title="Say hello"
+						onAction={() => showToast({ title: 'Hello!' })}
+					/>
+				</ActionPanel>
+			}
+		/>
+	);
+}
+```
+
+When your command is launched from the root search, Vicinae will automatically push a new view on the stack, which will get hydrated as your
+extension is loaded.
+
+## Root component types
+
+A Vicinae view always expect to be of one of the supported root component types. Here are the main ones:
+
+- `List` - used to render vertical lists with an optional detail component.
+- `Grid` - used to render grid lists.
+- `Detail` - used to render markdown with an optional metadata section.
+- `Form` - used to render forms made of various kind of inputs.
+
+For a full list of available root components, please refer to the [API Reference](/extensions/api).
+
+<Warning>
+Returning an element that is not of one of the supported root types will throw an error.
+</Warning>
+
+<Note>
+Don't even try to return HTML. [No, really](/extensions/introduction#wheres-the-browser-at).
+</Note>
+
+
+## Pushing more views
+
+A view command is not limited to presenting only one single view: it can push and pop views as it wants.
+
+To do that, all you need is the `useNavigation` hook:
+
+```tsx
+import {
+	Detail, ActionPanel, Action,
+	showToast, List, Icon,
+	useNavigation
+} from '@vicinae/api';
+
+// View to push on top of the main view
+const ListView = () => {
+	const { push, pop } = useNavigation();
+
+	return (
+		<List>
+			<List.Item
+				title={"Push myself"}
+				icon={Icon.Sun}
+				actions={
+					<ActionPanel>
+						<Action
+							title="push myself!"
+							icon={Icon.Window}
+							onAction={() => push(<ListView />)}
+						/>
+					</ActionPanel>
+				}
+			/>
+			<List.Item
+				title={"Pop myself"}
+				icon={Icon.Moon}
+				actions={
+					<ActionPanel>
+						<Action
+							title="pop myself!"
+							icon={Icon.Bolt}
+							onAction={pop}
+						/>
+					</ActionPanel>
+				}
+			/>
+		</List>
+	)
+}
+
+// Main view
+export default function MyFirstCommand() {
+	const { push } = useNavigation();
+
+	return (
+		<Detail
+			markdown={md}
+			actions={
+				<ActionPanel>
+					{/** Note: <Action.PushView> should generally be used
+					  instead, but we show it for demonstration purposes */}
+					<Action
+						title="Push a new view"
+						icon={Icon.AppWindow}
+						onAction={() => push(<ListView />)}
+					/>
+				</ActionPanel>
+			}
+		/>
+	);
+}
+```
+
+<Warning>
+There is currently no practical limitations as to how many views a command can push on the stack.
+However, having to push more than 5 views on top of each other probably suggests that your command does too much!
+</Warning>
+
+
+
+
+
+
+# API Reference
+
+
+
+
+================================================
+FILE: typescript/api/docs/README.md
+================================================
+**@vicinae/api**
+
+***
+
+# @vicinae/api
+
+## Namespaces
+
+- [Alert](@vicinae/namespaces/Alert/README.md)
+- [Cache](@vicinae/namespaces/Cache/README.md)
+- [Clipboard](@vicinae/namespaces/Clipboard/README.md)
+- [Color](@vicinae/namespaces/Color/README.md)
+- [FileSearch](@vicinae/namespaces/FileSearch/README.md)
+- [Form](@vicinae/namespaces/Form/README.md)
+- [Grid](@vicinae/namespaces/Grid/README.md)
+- [Image](@vicinae/namespaces/Image/README.md)
+- [Keyboard](@vicinae/namespaces/Keyboard/README.md)
+- [List](@vicinae/namespaces/List/README.md)
+- [LocalStorage](@vicinae/namespaces/LocalStorage/README.md)
+- [OAuth](@vicinae/namespaces/OAuth/README.md)
+- [Toast](@vicinae/namespaces/Toast/README.md)
+- [WindowManagement](@vicinae/namespaces/WindowManagement/README.md)
+
+## Enumerations
+
+- [Color](enumerations/Color.md)
+- [Icon](enumerations/Icon.md)
+- [LaunchType](enumerations/LaunchType.md)
+- [PopToRootType](enumerations/PopToRootType.md)
+
+## Classes
+
+- [Cache](classes/Cache.md)
+- [LocalStorage](classes/LocalStorage.md)
+- [PKCEClient](classes/PKCEClient.md)
+- [Toast](classes/Toast.md)
+
+## Interfaces
+
+- [Application](interfaces/Application.md)
+- [Arguments](interfaces/Arguments.md)
+- [Environment](interfaces/Environment.md)
+- [LaunchContext](interfaces/LaunchContext.md)
+- [~~ToastActionOptions~~](interfaces/ToastActionOptions.md)
+- [~~ToastOptions~~](interfaces/ToastOptions.md)
+
+## Type Aliases
+
+- [ActionOpenInBrowserProps](type-aliases/ActionOpenInBrowserProps.md)
+- [ActionOpenProps](type-aliases/ActionOpenProps.md)
+- [ActionPanelProps](type-aliases/ActionPanelProps.md)
+- [ActionPanelSectionProps](type-aliases/ActionPanelSectionProps.md)
+- [ActionPanelSubmenuProps](type-aliases/ActionPanelSubmenuProps.md)
+- [ActionPasteProps](type-aliases/ActionPasteProps.md)
+- [ActionProps](type-aliases/ActionProps.md)
+- [ActionPushProps](type-aliases/ActionPushProps.md)
+- [ActionSubmitFormProps](type-aliases/ActionSubmitFormProps.md)
+- [BaseActionProps](type-aliases/BaseActionProps.md)
+- [ColorLike](type-aliases/ColorLike.md)
+- [CopyToClipboardProps](type-aliases/CopyToClipboardProps.md)
+- [DetailProps](type-aliases/DetailProps.md)
+- [FormItemRef](type-aliases/FormItemRef.md)
+- [Image](type-aliases/Image.md)
+- [ImageLike](type-aliases/ImageLike.md)
+- [KeyEquivalent](type-aliases/KeyEquivalent.md)
+- [KeyModifier](type-aliases/KeyModifier.md)
+- [LaunchProps](type-aliases/LaunchProps.md)
+- [Message](type-aliases/Message.md)
+- [SerializedColorLike](type-aliases/SerializedColorLike.md)
+
+## Variables
+
+- [Action](variables/Action.md)
+- [ActionPanel](variables/ActionPanel.md)
+- [Application](variables/Application.md)
+- [bus](variables/bus.md)
+- [Detail](variables/Detail.md)
+- [environment](variables/environment.md)
+- [Form](variables/Form.md)
+- [Grid](variables/Grid.md)
+- [Keyboard](variables/Keyboard.md)
+- [List](variables/List.md)
+- [MenuBarExtra](variables/MenuBarExtra.md)
+- [NavigationProvider](variables/NavigationProvider.md)
+- [OAuth](variables/OAuth.md)
+- [~~ToastStyle~~](variables/ToastStyle.md)
+
+## Functions
+
+- [clearSearchBar](functions/clearSearchBar.md)
+- [closeMainWindow](functions/closeMainWindow.md)
+- [confirmAlert](functions/confirmAlert.md)
+- [getApplications](functions/getApplications.md)
+- [getDefaultApplication](functions/getDefaultApplication.md)
+- [getFrontmostApplication](functions/getFrontmostApplication.md)
+- [getPreferenceValues](functions/getPreferenceValues.md)
+- [getSelectedText](functions/getSelectedText.md)
+- [open](functions/open.md)
+- [openCommandPreferences](functions/openCommandPreferences.md)
+- [openExtensionPreferences](functions/openExtensionPreferences.md)
+- [popToRoot](functions/popToRoot.md)
+- [serializeColorLike](functions/serializeColorLike.md)
+- [serializeProtoImage](functions/serializeProtoImage.md)
+- [showHUD](functions/showHUD.md)
+- [showInFileBrowser](functions/showInFileBrowser.md)
+- [showToast](functions/showToast.md)
+- [trash](functions/trash.md)
+- [useApplications](functions/useApplications.md)
+- [useNavigation](functions/useNavigation.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Alert/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Alert
+
+# Alert
+
+## Enumerations
+
+- [ActionStyle](enumerations/ActionStyle.md)
+
+## Type Aliases
+
+- [ActionOptions](type-aliases/ActionOptions.md)
+- [Options](type-aliases/Options.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Alert/enumerations/ActionStyle.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Alert](../README.md) / ActionStyle
+
+# Enumeration: ActionStyle
+
+## Enumeration Members
+
+### Cancel
+
+> **Cancel**: `"cancel"`
+
+***
+
+### Default
+
+> **Default**: `"default"`
+
+***
+
+### Destructive
+
+> **Destructive**: `"destructive"`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Alert/type-aliases/ActionOptions.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Alert](../README.md) / ActionOptions
+
+# Type Alias: ActionOptions
+
+> **ActionOptions** = `object`
+
+## Properties
+
+### onAction()?
+
+> `optional` **onAction**: () => `void`
+
+#### Returns
+
+`void`
+
+***
+
+### style?
+
+> `optional` **style**: [`ActionStyle`](../enumerations/ActionStyle.md)
+
+***
+
+### title
+
+> **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Alert/type-aliases/Options.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Alert](../README.md) / Options
+
+# Type Alias: Options
+
+> **Options** = `object`
+
+## Properties
+
+### dismissAction?
+
+> `optional` **dismissAction**: [`ActionOptions`](ActionOptions.md)
+
+***
+
+### icon?
+
+> `optional` **icon**: [`ImageLike`](../../Image/type-aliases/ImageLike.md)
+
+***
+
+### message?
+
+> `optional` **message**: `string`
+
+***
+
+### primaryAction?
+
+> `optional` **primaryAction**: [`ActionOptions`](ActionOptions.md)
+
+***
+
+### rememberUserChoice?
+
+> `optional` **rememberUserChoice**: `boolean`
+
+***
+
+### title
+
+> **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Cache/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Cache
+
+# Cache
+
+## Interfaces
+
+- [Options](interfaces/Options.md)
+
+## Type Aliases
+
+- [Subscriber](type-aliases/Subscriber.md)
+- [Subscription](type-aliases/Subscription.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Cache/interfaces/Options.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Cache](../README.md) / Options
+
+# Interface: Options
+
+The options for creating a new [Cache](../../../../classes/Cache.md).
+
+## Properties
+
+### capacity?
+
+> `optional` **capacity**: `number`
+
+The capacity in bytes. If the stored data exceeds the capacity, the least recently used data is removed.
+The default capacity is 10 MB.
+
+***
+
+### namespace?
+
+> `optional` **namespace**: `string`
+
+If set, the Cache will be namespaced via a subdirectory.
+This can be useful to separate the caches for individual commands of an extension.
+By default, the cache is shared between the commands of an extension.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Cache/type-aliases/Subscriber.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Cache](../README.md) / Subscriber
+
+# Type Alias: Subscriber()
+
+> **Subscriber** = (`key`, `data`) => `void`
+
+## Parameters
+
+### key
+
+`string` | `undefined`
+
+### data
+
+`string` | `undefined`
+
+## Returns
+
+`void`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Cache/type-aliases/Subscription.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Cache](../README.md) / Subscription
+
+# Type Alias: Subscription()
+
+> **Subscription** = () => `void`
+
+## Returns
+
+`void`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Clipboard
+
+# Clipboard
+
+## Type Aliases
+
+- [Content](type-aliases/Content.md)
+- [CopyOptions](type-aliases/CopyOptions.md)
+- [ReadContent](type-aliases/ReadContent.md)
+
+## Functions
+
+- [clear](functions/clear.md)
+- [copy](functions/copy.md)
+- [paste](functions/paste.md)
+- [read](functions/read.md)
+- [readText](functions/readText.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/functions/clear.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / clear
+
+# Function: clear()
+
+> **clear**(): `Promise`\<`void`\>
+
+Clear the current clipboard content.
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/functions/copy.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / copy
+
+# Function: copy()
+
+> **copy**(`text`, `options`): `Promise`\<`void`\>
+
+Copy the provided content in the clipboard.
+The `concealed` option can be passed so that the created clipboard selection
+does not get indexed by the Vicinae clipboard manager.
+
+## Parameters
+
+### text
+
+`string` | `number` | [`Content`](../type-aliases/Content.md)
+
+### options
+
+[`CopyOptions`](../type-aliases/CopyOptions.md) = `{}`
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/functions/paste.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / paste
+
+# Function: paste()
+
+> **paste**(`text`): `Promise`\<`void`\>
+
+Paste the provided clipboard content to the active window.
+If the environment does not support either getting the active window
+or pasting content to it directly, this will fallback to a regular
+clipboard copy.
+
+## Parameters
+
+### text
+
+`string` | [`Content`](../type-aliases/Content.md)
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/functions/read.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / read
+
+# Function: read()
+
+> **read**(`options?`): `Promise`\<[`ReadContent`](../type-aliases/ReadContent.md)\>
+
+Read the current content of the clipboard, which can contain text, html and a file path.
+Note: the offset option is not yet implemented
+
+```ts
+const { text, html, file } = await Clipboard.read();
+```
+
+## Parameters
+
+### options?
+
+#### offset?
+
+`number`
+
+## Returns
+
+`Promise`\<[`ReadContent`](../type-aliases/ReadContent.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/functions/readText.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / readText
+
+# Function: readText()
+
+> **readText**(`options?`): `Promise`\<`string`\>
+
+Read the text representation of the current clipboard data. If the data is not text at all, this
+returns an empty string.
+If you want to read optional html or file path, consider
+
+## Parameters
+
+### options?
+
+#### offset?
+
+`number`
+
+## Returns
+
+`Promise`\<`string`\>
+
+## See
+
+Note: the offset option is not yet implemented.
+
+```ts
+const text = await Clipboard.readText();
+```
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/type-aliases/Content.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / Content
+
+# Type Alias: Content
+
+> **Content** = \{ `text`: `string`; \} \| \{ `file`: `PathLike`; \} \| \{ `html`: `string`; `text?`: `string`; \}
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/type-aliases/CopyOptions.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / CopyOptions
+
+# Type Alias: CopyOptions
+
+> **CopyOptions** = `object`
+
+## Properties
+
+### concealed?
+
+> `optional` **concealed**: `boolean`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Clipboard/type-aliases/ReadContent.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Clipboard](../README.md) / ReadContent
+
+# Type Alias: ReadContent
+
+> **ReadContent** = `object`
+
+## Properties
+
+### file?
+
+> `optional` **file**: `string`
+
+***
+
+### html?
+
+> `optional` **html**: `string`
+
+***
+
+### text
+
+> **text**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Color/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Color
+
+# Color
+
+## Type Aliases
+
+- [Dynamic](type-aliases/Dynamic.md)
+- [Raw](type-aliases/Raw.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Color/type-aliases/Dynamic.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Color](../README.md) / Dynamic
+
+# Type Alias: Dynamic
+
+> **Dynamic** = `DynamicColor`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Color/type-aliases/Raw.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Color](../README.md) / Raw
+
+# Type Alias: Raw
+
+> **Raw** = `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/FileSearch/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / FileSearch
+
+# FileSearch
+
+Access Vicinae's built-in file search functionality.
+
+## Remarks
+
+This API provides read-only access to the file search system.
+Use this to find existing files indexed by Vicinae.
+This does **not** provide indexing capabilities.
+
+## Example
+
+```typescript
+import { FileSearch } from '@vicinae/api';
+
+const results = await FileSearch.search('invoice');
+console.log(`Found ${results.length} files`);
+```
+
+## Type Aliases
+
+- [FileInfo](type-aliases/FileInfo.md)
+- [SearchOptions](type-aliases/SearchOptions.md)
+
+## Functions
+
+- [search](functions/search.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/FileSearch/functions/search.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [FileSearch](../README.md) / search
+
+# Function: search()
+
+> **search**(`query`, `_`): `Promise`\<`FileInfo`[]\>
+
+Search for files matching the provided query string.
+
+## Parameters
+
+### query
+
+`string`
+
+Search term (min. 1 character) - the shorter the query the longer the average search takes.
+
+### \_
+
+[`SearchOptions`](../type-aliases/SearchOptions.md) = `{}`
+
+## Returns
+
+`Promise`\<`FileInfo`[]\>
+
+Promise resolving to array of matching files
+
+## Remarks
+
+Uses prefix matching on filename tokens. For example:
+- File: "invoice-new-motherboard.pdf"
+- Matches: "inv", "new", "mother", "pdf"
+- No match: "board", "oice" (not prefixes)
+
+## Example
+
+```typescript
+const files = await fileSearch.search('invoice');
+```
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/FileSearch/type-aliases/FileInfo.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [FileSearch](../README.md) / FileInfo
+
+# Type Alias: FileInfo
+
+> **FileInfo** = `ProtoFileInfo`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/FileSearch/type-aliases/SearchOptions.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [FileSearch](../README.md) / SearchOptions
+
+# Type Alias: SearchOptions
+
+> **SearchOptions** = `object`
+
+For now we provide no options, but in the future we will implement mime type and file type filtering.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Form
+
+# Form
+
+## Type Aliases
+
+- [Checkbox](type-aliases/Checkbox.md)
+- [DatePicker](type-aliases/DatePicker.md)
+- [Dropdown](type-aliases/Dropdown.md)
+- [FilePicker](type-aliases/FilePicker.md)
+- [ItemProps](type-aliases/ItemProps.md)
+- [ItemReference](type-aliases/ItemReference.md)
+- [PasswordField](type-aliases/PasswordField.md)
+- [Props](type-aliases/Props.md)
+- [TagPicker](type-aliases/TagPicker.md)
+- [TextArea](type-aliases/TextArea.md)
+- [TextField](type-aliases/TextField.md)
+- [Value](type-aliases/Value.md)
+- [Values](type-aliases/Values.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/Checkbox.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / Checkbox
+
+# Type Alias: Checkbox
+
+> **Checkbox** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/DatePicker.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / DatePicker
+
+# Type Alias: DatePicker
+
+> **DatePicker** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/Dropdown.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / Dropdown
+
+# Type Alias: Dropdown
+
+> **Dropdown** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/FilePicker.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / FilePicker
+
+# Type Alias: FilePicker
+
+> **FilePicker** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/ItemProps.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / ItemProps
+
+# Type Alias: ItemProps\<T\>
+
+> **ItemProps**\<`T`\> = `FormItemProps`\<`T`\>
+
+## Type Parameters
+
+### T
+
+`T` *extends* [`Value`](Value.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/ItemReference.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / ItemReference
+
+# Type Alias: ItemReference
+
+> **ItemReference** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/PasswordField.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / PasswordField
+
+# Type Alias: PasswordField
+
+> **PasswordField** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `FormProps`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/TagPicker.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / TagPicker
+
+# Type Alias: TagPicker
+
+> **TagPicker** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/TextArea.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / TextArea
+
+# Type Alias: TextArea
+
+> **TextArea** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/TextField.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / TextField
+
+# Type Alias: TextField
+
+> **TextField** = [`FormItemRef`](../../../../type-aliases/FormItemRef.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/Value.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / Value
+
+# Type Alias: Value
+
+> **Value** = `string` \| `number` \| `boolean` \| `string`[] \| `number`[] \| `Date` \| `null`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Form/type-aliases/Values.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Form](../README.md) / Values
+
+# Type Alias: Values
+
+> **Values** = `object`
+
+## Index Signature
+
+\[`itemId`: `string`\]: [`Value`](Value.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Grid
+
+# Grid
+
+## Namespaces
+
+- [Item](namespaces/Item/README.md)
+- [Section](namespaces/Section/README.md)
+
+## Type Aliases
+
+- [AspectRatio](type-aliases/AspectRatio.md)
+- [Fit](type-aliases/Fit.md)
+- [Inset](type-aliases/Inset.md)
+- [Props](type-aliases/Props.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/namespaces/Item/README.md
+================================================
+[**@vicinae/api**](../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../README.md) / [Grid](../../README.md) / Item
+
+# Item
+
+## Type Aliases
+
+- [Accessory](type-aliases/Accessory.md)
+- [Props](type-aliases/Props.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/namespaces/Item/type-aliases/Accessory.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [Grid](../../../README.md) / [Item](../README.md) / Accessory
+
+# Type Alias: Accessory
+
+> **Accessory** = \{ `tag?`: `Tag`; \} \| \{ `text?`: `Text`; \} & `object`
+
+## Type Declaration
+
+### icon?
+
+> `optional` **icon**: [`ImageLike`](../../../../Image/type-aliases/ImageLike.md)
+
+### tooltip?
+
+> `optional` **tooltip**: `string` \| `null`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/namespaces/Item/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [Grid](../../../README.md) / [Item](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `object`
+
+## Properties
+
+### accessories?
+
+> `optional` **accessories**: [`Accessory`](Accessory.md)[]
+
+***
+
+### actions?
+
+> `optional` **actions**: `ReactNode`
+
+***
+
+### content
+
+> **content**: [`ImageLike`](../../../../Image/type-aliases/ImageLike.md) \| \{ `color`: [`ColorLike`](../../../../../../type-aliases/ColorLike.md); \} \| \{ `tooltip?`: `string`; `value`: [`ImageLike`](../../../../Image/type-aliases/ImageLike.md); \}
+
+***
+
+### detail?
+
+> `optional` **detail**: `React.ReactNode`
+
+***
+
+### icon?
+
+> `optional` **icon**: [`ImageLike`](../../../../../../type-aliases/ImageLike.md)
+
+***
+
+### id?
+
+> `optional` **id**: `string`
+
+***
+
+### keywords?
+
+> `optional` **keywords**: `string`[]
+
+***
+
+### subtitle?
+
+> `optional` **subtitle**: `string`
+
+***
+
+### title?
+
+> `optional` **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/namespaces/Section/README.md
+================================================
+[**@vicinae/api**](../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../README.md) / [Grid](../../README.md) / Section
+
+# Section
+
+## Type Aliases
+
+- [Props](type-aliases/Props.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/namespaces/Section/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [Grid](../../../README.md) / [Section](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `BaseSection` & `object`
+
+## Type Declaration
+
+### children?
+
+> `optional` **children**: `ReactNode`
+
+### subtitle?
+
+> `optional` **subtitle**: `string`
+
+### title?
+
+> `optional` **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/type-aliases/AspectRatio.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Grid](../README.md) / AspectRatio
+
+# Type Alias: AspectRatio
+
+> **AspectRatio** = `"1"` \| `"3/2"` \| `"2/3"` \| `"4/3"` \| `"3/4"` \| `"16/9"` \| `"9/16"` \| `"21/9"` \| `"9/21"` \| `"32/9"` \| `"9/32"`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/type-aliases/Fit.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Grid](../README.md) / Fit
+
+# Type Alias: Fit
+
+> **Fit** = `GridFit`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/type-aliases/Inset.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Grid](../README.md) / Inset
+
+# Type Alias: Inset
+
+> **Inset** = `GridInset`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Grid/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Grid](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `BaseSection` & `object`
+
+## Type Declaration
+
+### actions?
+
+> `optional` **actions**: `React.ReactNode`
+
+### children?
+
+> `optional` **children**: `React.ReactNode`
+
+### ~~enableFiltering?~~
+
+> `optional` **enableFiltering**: `boolean`
+
+#### Deprecated
+
+use filtering
+
+### filtering?
+
+> `optional` **filtering**: `boolean`
+
+### isLoading?
+
+> `optional` **isLoading**: `boolean`
+
+### navigationTitle?
+
+> `optional` **navigationTitle**: `string`
+
+### onSearchTextChange()?
+
+> `optional` **onSearchTextChange**: (`text`) => `void`
+
+#### Parameters
+
+##### text
+
+`string`
+
+#### Returns
+
+`void`
+
+### onSelectionChange()?
+
+> `optional` **onSelectionChange**: (`id`) => `void`
+
+#### Parameters
+
+##### id
+
+`string`
+
+#### Returns
+
+`void`
+
+### searchBarAccessory?
+
+> `optional` **searchBarAccessory**: `ReactNode`
+
+### searchBarPlaceholder?
+
+> `optional` **searchBarPlaceholder**: `string`
+
+### searchText?
+
+> `optional` **searchText**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Image
+
+# Image
+
+## Enumerations
+
+- [Mask](enumerations/Mask.md)
+
+## Type Aliases
+
+- [Asset](type-aliases/Asset.md)
+- [Fallback](type-aliases/Fallback.md)
+- [ImageLike](type-aliases/ImageLike.md)
+- [Source](type-aliases/Source.md)
+- [ThemedImage](type-aliases/ThemedImage.md)
+- [ThemedSource](type-aliases/ThemedSource.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/enumerations/Mask.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Image](../README.md) / Mask
+
+# Enumeration: Mask
+
+## Enumeration Members
+
+### Circle
+
+> **Circle**: `"circle"`
+
+***
+
+### RoundedRectangle
+
+> **RoundedRectangle**: `"roundedRectangle"`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/type-aliases/Asset.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Image](../README.md) / Asset
+
+# Type Alias: Asset
+
+> **Asset** = `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/type-aliases/Fallback.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Image](../README.md) / Fallback
+
+# Type Alias: Fallback
+
+> **Fallback** = [`Source`](Source.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/type-aliases/ImageLike.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Image](../README.md) / ImageLike
+
+# Type Alias: ImageLike
+
+> **ImageLike** = `URL` \| [`Asset`](Asset.md) \| [`Image`](../../../../type-aliases/Image.md) \| [`ThemedImage`](ThemedImage.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/type-aliases/Source.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Image](../README.md) / Source
+
+# Type Alias: Source
+
+> **Source** = `URL` \| [`Asset`](Asset.md) \| [`ThemedSource`](ThemedSource.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/type-aliases/ThemedImage.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Image](../README.md) / ThemedImage
+
+# Type Alias: ThemedImage
+
+> **ThemedImage** = `object`
+
+## Properties
+
+### dark
+
+> **dark**: `URL` \| [`Asset`](Asset.md)
+
+***
+
+### light
+
+> **light**: `URL` \| [`Asset`](Asset.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Image/type-aliases/ThemedSource.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Image](../README.md) / ThemedSource
+
+# Type Alias: ThemedSource
+
+> **ThemedSource** = `object`
+
+## Properties
+
+### dark
+
+> **dark**: `URL` \| [`Asset`](Asset.md)
+
+***
+
+### light
+
+> **light**: `URL` \| [`Asset`](Asset.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Keyboard/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Keyboard
+
+# Keyboard
+
+## Type Aliases
+
+- [Shortcut](type-aliases/Shortcut.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Keyboard/type-aliases/Shortcut.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Keyboard](../README.md) / Shortcut
+
+# Type Alias: Shortcut
+
+> **Shortcut** = `object`
+
+## Properties
+
+### key
+
+> **key**: [`KeyEquivalent`](../../../../type-aliases/KeyEquivalent.md)
+
+***
+
+### modifiers
+
+> **modifiers**: [`KeyModifier`](../../../../type-aliases/KeyModifier.md)[]
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / List
+
+# List
+
+## Namespaces
+
+- [Item](namespaces/Item/README.md)
+- [Section](namespaces/Section/README.md)
+
+## Type Aliases
+
+- [Props](type-aliases/Props.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/README.md
+================================================
+[**@vicinae/api**](../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../README.md) / [List](../../README.md) / Item
+
+# Item
+
+## Namespaces
+
+- [Detail](namespaces/Detail/README.md)
+
+## Type Aliases
+
+- [Accessory](type-aliases/Accessory.md)
+- [AccessoryBase](type-aliases/AccessoryBase.md)
+- [Props](type-aliases/Props.md)
+- [Tag](type-aliases/Tag.md)
+- [Text](type-aliases/Text.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/namespaces/Detail/README.md
+================================================
+[**@vicinae/api**](../../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../../README.md) / [List](../../../../README.md) / [Item](../../README.md) / Detail
+
+# Detail
+
+## Type Aliases
+
+- [Props](type-aliases/Props.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/namespaces/Detail/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../../../README.md) / [List](../../../../../README.md) / [Item](../../../README.md) / [Detail](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `object`
+
+## Properties
+
+### isLoading?
+
+> `optional` **isLoading**: `boolean`
+
+***
+
+### markdown?
+
+> `optional` **markdown**: `string`
+
+***
+
+### metadata?
+
+> `optional` **metadata**: `React.ReactNode`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/type-aliases/Accessory.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [List](../../../README.md) / [Item](../README.md) / Accessory
+
+# Type Alias: Accessory
+
+> **Accessory** = \{ `tag?`: [`Tag`](Tag.md); \} \| \{ `text?`: [`Text`](Text.md); \} & `object`
+
+## Type Declaration
+
+### icon?
+
+> `optional` **icon**: [`ImageLike`](../../../../Image/type-aliases/ImageLike.md)
+
+### tooltip?
+
+> `optional` **tooltip**: `string` \| `null`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/type-aliases/AccessoryBase.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [List](../../../README.md) / [Item](../README.md) / AccessoryBase
+
+# Type Alias: AccessoryBase
+
+> **AccessoryBase** = `string` \| `Date` \| `undefined` \| `null`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [List](../../../README.md) / [Item](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `object`
+
+## Properties
+
+### accessories?
+
+> `optional` **accessories**: [`Accessory`](Accessory.md)[]
+
+***
+
+### actions?
+
+> `optional` **actions**: `ReactNode`
+
+***
+
+### detail?
+
+> `optional` **detail**: `React.ReactNode`
+
+***
+
+### icon?
+
+> `optional` **icon**: [`ImageLike`](../../../../../../type-aliases/ImageLike.md)
+
+***
+
+### id?
+
+> `optional` **id**: `string`
+
+***
+
+### keywords?
+
+> `optional` **keywords**: `string`[]
+
+***
+
+### subtitle?
+
+> `optional` **subtitle**: `string`
+
+***
+
+### title
+
+> **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/type-aliases/Tag.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [List](../../../README.md) / [Item](../README.md) / Tag
+
+# Type Alias: Tag
+
+> **Tag** = [`AccessoryBase`](AccessoryBase.md) \| \{ `color`: [`ColorLike`](../../../../../../type-aliases/ColorLike.md); `value`: `string` \| `Date` \| `undefined` \| `null`; \}
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Item/type-aliases/Text.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [List](../../../README.md) / [Item](../README.md) / Text
+
+# Type Alias: Text
+
+> **Text** = [`AccessoryBase`](AccessoryBase.md) \| \{ `color`: [`Color`](../../../../../../enumerations/Color.md); `value`: `string` \| `Date` \| `undefined` \| `null`; \}
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Section/README.md
+================================================
+[**@vicinae/api**](../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../README.md) / [List](../../README.md) / Section
+
+# Section
+
+## Type Aliases
+
+- [Props](type-aliases/Props.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/namespaces/Section/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [List](../../../README.md) / [Section](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `object`
+
+## Properties
+
+### children?
+
+> `optional` **children**: `ReactNode`
+
+***
+
+### subtitle?
+
+> `optional` **subtitle**: `string`
+
+***
+
+### title?
+
+> `optional` **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/List/type-aliases/Props.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [List](../README.md) / Props
+
+# Type Alias: Props
+
+> **Props** = `object`
+
+## Properties
+
+### actions?
+
+> `optional` **actions**: `React.ReactNode`
+
+***
+
+### children?
+
+> `optional` **children**: `React.ReactNode`
+
+***
+
+### ~~enableFiltering?~~
+
+> `optional` **enableFiltering**: `boolean`
+
+#### Deprecated
+
+use filtering
+
+***
+
+### filtering?
+
+> `optional` **filtering**: `boolean`
+
+***
+
+### isLoading?
+
+> `optional` **isLoading**: `boolean`
+
+***
+
+### isShowingDetail?
+
+> `optional` **isShowingDetail**: `boolean`
+
+***
+
+### navigationTitle?
+
+> `optional` **navigationTitle**: `string`
+
+***
+
+### onSearchTextChange()?
+
+> `optional` **onSearchTextChange**: (`text`) => `void`
+
+#### Parameters
+
+##### text
+
+`string`
+
+#### Returns
+
+`void`
+
+***
+
+### onSelectionChange()?
+
+> `optional` **onSelectionChange**: (`id`) => `void`
+
+#### Parameters
+
+##### id
+
+`string`
+
+#### Returns
+
+`void`
+
+***
+
+### searchBarAccessory?
+
+> `optional` **searchBarAccessory**: `ReactNode`
+
+***
+
+### searchBarPlaceholder?
+
+> `optional` **searchBarPlaceholder**: `string`
+
+***
+
+### searchText?
+
+> `optional` **searchText**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/LocalStorage/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / LocalStorage
+
+# LocalStorage
+
+## Type Aliases
+
+- [Value](type-aliases/Value.md)
+- [Values](type-aliases/Values.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/LocalStorage/type-aliases/Value.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [LocalStorage](../README.md) / Value
+
+# Type Alias: Value
+
+> **Value** = `string` \| `number` \| `boolean`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/LocalStorage/type-aliases/Values.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [LocalStorage](../README.md) / Values
+
+# Type Alias: Values
+
+> **Values** = `object`
+
+## Index Signature
+
+\[`key`: `string`\]: [`Value`](Value.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / OAuth
+
+# OAuth
+
+## Namespaces
+
+- [PKCEClient](namespaces/PKCEClient/README.md)
+
+## Interfaces
+
+- [AuthorizationOptions](interfaces/AuthorizationOptions.md)
+- [AuthorizationRequest](interfaces/AuthorizationRequest.md)
+- [AuthorizationRequestOptions](interfaces/AuthorizationRequestOptions.md)
+- [AuthorizationRequestURLParams](interfaces/AuthorizationRequestURLParams.md)
+- [AuthorizationResponse](interfaces/AuthorizationResponse.md)
+- [TokenResponse](interfaces/TokenResponse.md)
+- [TokenSet](interfaces/TokenSet.md)
+- [TokenSetOptions](interfaces/TokenSetOptions.md)
+
+## Type Aliases
+
+- [RedirectMethod](type-aliases/RedirectMethod.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/AuthorizationOptions.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / AuthorizationOptions
+
+# Interface: AuthorizationOptions
+
+Options for customizing OAuth.PKCEClient.authorize.
+You can use values from [OAuth.AuthorizationRequest](AuthorizationRequest.md) to build your own URL.
+
+## Properties
+
+### url
+
+> **url**: `string`
+
+The full authorization URL.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/AuthorizationRequest.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / AuthorizationRequest
+
+# Interface: AuthorizationRequest
+
+The request returned by OAuth.PKCEClient.authorizationRequest.
+Can be used as direct input to OAuth.PKCEClient.authorize, or
+to extract parameters for constructing a custom URL in [OAuth.AuthorizationOptions](AuthorizationOptions.md).
+
+## Extends
+
+- [`AuthorizationRequestURLParams`](AuthorizationRequestURLParams.md)
+
+## Properties
+
+### codeChallenge
+
+> **codeChallenge**: `string`
+
+The PKCE `code_challenge` value.
+
+#### Inherited from
+
+[`AuthorizationRequestURLParams`](AuthorizationRequestURLParams.md).[`codeChallenge`](AuthorizationRequestURLParams.md#codechallenge)
+
+***
+
+### codeVerifier
+
+> **codeVerifier**: `string`
+
+The PKCE `code_verifier` value.
+
+#### Inherited from
+
+[`AuthorizationRequestURLParams`](AuthorizationRequestURLParams.md).[`codeVerifier`](AuthorizationRequestURLParams.md#codeverifier)
+
+***
+
+### redirectURI
+
+> **redirectURI**: `string`
+
+The OAuth `redirect_uri` value.
+
+#### Inherited from
+
+[`AuthorizationRequestURLParams`](AuthorizationRequestURLParams.md).[`redirectURI`](AuthorizationRequestURLParams.md#redirecturi)
+
+***
+
+### state
+
+> **state**: `string`
+
+The OAuth `state` value.
+
+#### Inherited from
+
+[`AuthorizationRequestURLParams`](AuthorizationRequestURLParams.md).[`state`](AuthorizationRequestURLParams.md#state)
+
+## Methods
+
+### toURL()
+
+> **toURL**(): `string`
+
+Constructs the full authorization URL.
+
+#### Returns
+
+`string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/AuthorizationRequestOptions.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / AuthorizationRequestOptions
+
+# Interface: AuthorizationRequestOptions
+
+The options for an authorization request via OAuth.PKCEClient.authorizationRequest.
+
+## Properties
+
+### clientId
+
+> **clientId**: `string`
+
+The client ID of the configured OAuth app.
+
+***
+
+### endpoint
+
+> **endpoint**: `string`
+
+The URL to the authorization endpoint for the OAuth provider.
+
+***
+
+### extraParameters?
+
+> `optional` **extraParameters**: `Record`\<`string`, `string`\>
+
+Optional additional parameters for the authorization request.
+Note that some providers require additional parameters, for example to obtain long-lived refresh tokens.
+
+***
+
+### scope
+
+> **scope**: `string`
+
+A space-delimited list of scopes for identifying the resources to access on the user's behalf.
+The scopes are typically shown to the user on the provider's consent screen in the browser.
+Note that some providers require the same scopes be configured in the registered OAuth app.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/AuthorizationRequestURLParams.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / AuthorizationRequestURLParams
+
+# Interface: AuthorizationRequestURLParams
+
+Values of [OAuth.AuthorizationRequest](AuthorizationRequest.md).
+The PKCE client automatically generates the values for you and returns them for OAuth.PKCEClient.authorizationRequest.
+
+## Extended by
+
+- [`AuthorizationRequest`](AuthorizationRequest.md)
+
+## Properties
+
+### codeChallenge
+
+> **codeChallenge**: `string`
+
+The PKCE `code_challenge` value.
+
+***
+
+### codeVerifier
+
+> **codeVerifier**: `string`
+
+The PKCE `code_verifier` value.
+
+***
+
+### redirectURI
+
+> **redirectURI**: `string`
+
+The OAuth `redirect_uri` value.
+
+***
+
+### state
+
+> **state**: `string`
+
+The OAuth `state` value.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/AuthorizationResponse.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / AuthorizationResponse
+
+# Interface: AuthorizationResponse
+
+The response returned by OAuth.PKCEClient.authorize, containing the authorization code after the provider redirect.
+You can then exchange the authorization code for an access token using the provider's token endpoint.
+
+## Properties
+
+### authorizationCode
+
+> **authorizationCode**: `string`
+
+The authorization code from the OAuth provider.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/TokenResponse.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / TokenResponse
+
+# Interface: TokenResponse
+
+Defines the standard JSON response for an OAuth token request.
+The response can be directly used to store a [OAuth.TokenSet](../../../../variables/OAuth.md#tokenset) via OAuth.PKCEClient.setTokens.
+
+## Properties
+
+### access\_token
+
+> **access\_token**: `string`
+
+The `access_token` value returned by an OAuth token request.
+
+***
+
+### expires\_in?
+
+> `optional` **expires\_in**: `number`
+
+An optional `expires_in` value (in seconds) returned by an OAuth token request.
+
+***
+
+### id\_token?
+
+> `optional` **id\_token**: `string`
+
+An optional `id_token` value returned by an identity request (e.g. /me, Open ID Connect).
+
+***
+
+### refresh\_token?
+
+> `optional` **refresh\_token**: `string`
+
+An optional `refresh_token` value returned by an OAuth token request.
+
+***
+
+### scope?
+
+> `optional` **scope**: `string`
+
+The optional `scope` value returned by an OAuth token request.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/TokenSet.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / TokenSet
+
+# Interface: TokenSet
+
+Describes the TokenSet created from an OAuth provider's token response.
+The `accessToken` is the only required parameter but typically OAuth providers also return a refresh token, an expires value, and the scope.
+Securely store a token set via OAuth.PKCEClient.setTokens and retrieve it via OAuth.PKCEClient.getTokens.
+
+## Properties
+
+### accessToken
+
+> **accessToken**: `string`
+
+The access token returned by an OAuth token request.
+
+***
+
+### expiresIn?
+
+> `optional` **expiresIn**: `number`
+
+An optional expires value (in seconds) returned by an OAuth token request.
+
+***
+
+### idToken?
+
+> `optional` **idToken**: `string`
+
+An optional id token returned by an identity request (e.g. /me, Open ID Connect).
+
+***
+
+### refreshToken?
+
+> `optional` **refreshToken**: `string`
+
+An optional refresh token returned by an OAuth token request.
+
+***
+
+### scope?
+
+> `optional` **scope**: `string`
+
+The optional space-delimited list of scopes returned by an OAuth token request.
+You can use this to compare the currently stored access scopes against new access scopes the extension might require in a future version,
+and then ask the user to re-authorize with new scopes.
+
+***
+
+### updatedAt
+
+> **updatedAt**: `Date`
+
+The date when the token set was stored via OAuth.PKCEClient.setTokens.
+
+## Methods
+
+### isExpired()
+
+> **isExpired**(): `boolean`
+
+A convenience method for checking whether the access token has expired.
+The method factors in some seconds of "buffer", so it returns true a couple of seconds before the actual expiration time.
+This requires the `expiresIn` parameter to be set.
+
+#### Returns
+
+`boolean`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/interfaces/TokenSetOptions.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / TokenSetOptions
+
+# Interface: TokenSetOptions
+
+Options for a [OAuth.TokenSet](../../../../variables/OAuth.md#tokenset) to store via OAuth.PKCEClient.setTokens.
+
+## Properties
+
+### accessToken
+
+> **accessToken**: `string`
+
+The access token returned by an OAuth token request.
+
+***
+
+### expiresIn?
+
+> `optional` **expiresIn**: `number`
+
+An optional expires value (in seconds) returned by an OAuth token request.
+
+***
+
+### idToken?
+
+> `optional` **idToken**: `string`
+
+An optional id token returned by an identity request (e.g. /me, Open ID Connect).
+
+***
+
+### refreshToken?
+
+> `optional` **refreshToken**: `string`
+
+An optional refresh token returned by an OAuth token request.
+
+***
+
+### scope?
+
+> `optional` **scope**: `string`
+
+The optional scope value returned by an OAuth token request.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/namespaces/PKCEClient/README.md
+================================================
+[**@vicinae/api**](../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../README.md) / [OAuth](../../README.md) / PKCEClient
+
+# PKCEClient
+
+## Interfaces
+
+- [Options](interfaces/Options.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/namespaces/PKCEClient/interfaces/Options.md
+================================================
+[**@vicinae/api**](../../../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../../../README.md) / [OAuth](../../../README.md) / [PKCEClient](../README.md) / Options
+
+# Interface: Options
+
+The options for creating a new [OAuth.PKCEClient](../../../../../../variables/OAuth.md#pkceclient).
+
+## Properties
+
+### description?
+
+> `optional` **description**: `string`
+
+An optional description, shown in the OAuth overlay.
+You can use this to customize the message for the end user, for example for handling scope changes or other migrations.
+Raycast shows a default message if this is not configured.
+
+***
+
+### providerIcon?
+
+> `optional` **providerIcon**: [`ImageLike`](../../../../Image/type-aliases/ImageLike.md)
+
+An icon displayed in the OAuth overlay.
+Make sure to provide at least a size of 64x64 pixels.
+
+***
+
+### providerId?
+
+> `optional` **providerId**: `string`
+
+An optional ID for associating the client with a provider.
+Only set this if you use multiple different clients in your extension.
+
+***
+
+### providerName
+
+> **providerName**: `string`
+
+The name of the provider, displayed in the OAuth overlay.
+
+***
+
+### redirectMethod
+
+> **redirectMethod**: `OauthRedirectMethod`
+
+The redirect method for the OAuth flow.
+Make sure to set this to the correct method for the provider, see [OAuth.RedirectMethod](../../../../../../variables/OAuth.md#redirectmethod) for more information.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/OAuth/type-aliases/RedirectMethod.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [OAuth](../README.md) / RedirectMethod
+
+# Type Alias: RedirectMethod
+
+> **RedirectMethod** = `OauthRedirectMethod`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Toast/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / Toast
+
+# Toast
+
+## Enumerations
+
+- [Style](enumerations/Style.md)
+
+## Interfaces
+
+- [ActionOptions](interfaces/ActionOptions.md)
+- [Options](interfaces/Options.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Toast/enumerations/Style.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Toast](../README.md) / Style
+
+# Enumeration: Style
+
+Defines the visual style of the Toast.
+
+## Remarks
+
+Use [Toast.Style.Success](#success) for confirmations and [Toast.Style.Failure](#failure) for displaying errors.
+Use [Toast.Style.Animated](#animated) when your Toast should be shown until a process is completed.
+You can hide it later by using [Toast.hide](../../../../classes/Toast.md#hide) or update the properties of an existing Toast.
+
+## Enumeration Members
+
+### Animated
+
+> **Animated**: `"animated"`
+
+***
+
+### Failure
+
+> **Failure**: `"failure"`
+
+***
+
+### Success
+
+> **Success**: `"success"`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Toast/interfaces/ActionOptions.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Toast](../README.md) / ActionOptions
+
+# Interface: ActionOptions
+
+The options to create a [Toast](../../../../classes/Toast.md) Action.
+
+## Extended by
+
+- [`ToastActionOptions`](../../../../interfaces/ToastActionOptions.md)
+
+## Properties
+
+### onAction()
+
+> **onAction**: (`toast`) => `void`
+
+A callback called when the action is triggered.
+
+#### Parameters
+
+##### toast
+
+[`Toast`](../../../../classes/Toast.md)
+
+#### Returns
+
+`void`
+
+***
+
+### shortcut?
+
+> `optional` **shortcut**: [`Shortcut`](../../Keyboard/type-aliases/Shortcut.md)
+
+The keyboard shortcut for the action.
+
+***
+
+### title
+
+> **title**: `string`
+
+The title of the action.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/Toast/interfaces/Options.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [Toast](../README.md) / Options
+
+# Interface: Options
+
+The options to create a [Toast](../../../../classes/Toast.md).
+
+## Example
+
+```typescript
+import { showToast, Toast } from "@raycast/api";
+
+export default async () => {
+  const options: Toast.Options = {
+    style: Toast.Style.Success,
+    title: "Finished cooking",
+    message: "Delicious pasta for lunch",
+    primaryAction: {
+      title: 'Do something',
+      onAction: () => {
+        console.log("The toast action has been triggered")
+      }
+    }
+  };
+  await showToast(options);
+};
+```
+
+## Extended by
+
+- [`ToastOptions`](../../../../interfaces/ToastOptions.md)
+
+## Properties
+
+### message?
+
+> `optional` **message**: `string`
+
+An additional message for the Toast. Useful to show more information, e.g. an identifier of a newly created asset.
+
+***
+
+### primaryAction?
+
+> `optional` **primaryAction**: [`ActionOptions`](ActionOptions.md)
+
+The primary Action the user can take when hovering on the Toast.
+
+***
+
+### secondaryAction?
+
+> `optional` **secondaryAction**: [`ActionOptions`](ActionOptions.md)
+
+The secondary Action the user can take when hovering on the Toast.
+
+***
+
+### style?
+
+> `optional` **style**: [`Style`](../enumerations/Style.md)
+
+The style of a Toast.
+
+***
+
+### title
+
+> **title**: `string`
+
+The title of a Toast. Displayed on the top.
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/README.md
+================================================
+[**@vicinae/api**](../../../README.md)
+
+***
+
+[@vicinae/api](../../../README.md) / WindowManagement
+
+# WindowManagement
+
+Access Vicinae's window management features.
+
+## Remarks
+
+Window management features are available to a different degree depending on what environment vicinae runs
+in.
+
+## Example
+
+```typescript
+import { WindowManagement } from '@vicinae/api';
+
+const windows = await WindowManagement.getWindows();
+```
+
+## Type Aliases
+
+- [Window](type-aliases/Window.md)
+- [Workspace](type-aliases/Workspace.md)
+
+## Functions
+
+- [getActiveWindow](functions/getActiveWindow.md)
+- [getActiveWorkspace](functions/getActiveWorkspace.md)
+- [getWindows](functions/getWindows.md)
+- [getWindowsOnActiveWorkspace](functions/getWindowsOnActiveWorkspace.md)
+- [getWorkspaces](functions/getWorkspaces.md)
+- [ping](functions/ping.md)
+- [setWindowBounds](functions/setWindowBounds.md)
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/functions/getActiveWindow.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / getActiveWindow
+
+# Function: getActiveWindow()
+
+> **getActiveWindow**(): `Promise`\<[`Window`](../type-aliases/Window.md)\>
+
+## Returns
+
+`Promise`\<[`Window`](../type-aliases/Window.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/functions/getActiveWorkspace.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / getActiveWorkspace
+
+# Function: getActiveWorkspace()
+
+> **getActiveWorkspace**(): `Promise`\<[`Workspace`](../type-aliases/Workspace.md)\>
+
+## Returns
+
+`Promise`\<[`Workspace`](../type-aliases/Workspace.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/functions/getWindows.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / getWindows
+
+# Function: getWindows()
+
+> **getWindows**(`options`): `Promise`\<[`Window`](../type-aliases/Window.md)[]\>
+
+## Parameters
+
+### options
+
+`GetWindowsRequest` = `{}`
+
+## Returns
+
+`Promise`\<[`Window`](../type-aliases/Window.md)[]\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/functions/getWindowsOnActiveWorkspace.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / getWindowsOnActiveWorkspace
+
+# Function: getWindowsOnActiveWorkspace()
+
+> **getWindowsOnActiveWorkspace**(): `Promise`\<[`Window`](../type-aliases/Window.md)[]\>
+
+## Returns
+
+`Promise`\<[`Window`](../type-aliases/Window.md)[]\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/functions/getWorkspaces.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / getWorkspaces
+
+# Function: getWorkspaces()
+
+> **getWorkspaces**(): `Promise`\<[`Workspace`](../type-aliases/Workspace.md)[]\>
+
+## Returns
+
+`Promise`\<[`Workspace`](../type-aliases/Workspace.md)[]\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/functions/ping.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / ping
+
+# Function: ping()
+
+> **ping**(): `Promise`\<`boolean`\>
+
+## Returns
+
+`Promise`\<`boolean`\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/functions/setWindowBounds.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / setWindowBounds
+
+# Function: setWindowBounds()
+
+> **setWindowBounds**(`payload`): `Promise`\<`void`\>
+
+## Parameters
+
+### payload
+
+`SetWindowBoundsRequest`
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/type-aliases/Window.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / Window
+
+# Type Alias: Window
+
+> **Window** = `object`
+
+## Properties
+
+### active
+
+> **active**: `boolean`
+
+***
+
+### application?
+
+> `optional` **application**: [`Application`](../../../../interfaces/Application.md)
+
+***
+
+### bounds
+
+> **bounds**: `object`
+
+#### position
+
+> **position**: `object`
+
+##### position.x
+
+> **x**: `number`
+
+##### position.y
+
+> **y**: `number`
+
+#### size
+
+> **size**: `object`
+
+##### size.height
+
+> **height**: `number`
+
+##### size.width
+
+> **width**: `number`
+
+***
+
+### id
+
+> **id**: `string`
+
+***
+
+### workspaceId?
+
+> `optional` **workspaceId**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/@vicinae/namespaces/WindowManagement/type-aliases/Workspace.md
+================================================
+[**@vicinae/api**](../../../../README.md)
+
+***
+
+[@vicinae/api](../../../../README.md) / [WindowManagement](../README.md) / Workspace
+
+# Type Alias: Workspace
+
+> **Workspace** = `object`
+
+## Properties
+
+### active
+
+> **active**: `boolean`
+
+***
+
+### id
+
+> **id**: `string`
+
+***
+
+### monitorId
+
+> **monitorId**: `string`
+
+***
+
+### name
+
+> **name**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/classes/Cache.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Cache
+
+# Class: Cache
+
+Caching abstraction that stores data on disk and supports LRU (least recently used) access.
+Values can only be stored as plain text strings, so it is up to you to serialize your data in an appropriate way.
+For instance, you could store json using `JSON.stringify` and `JSON.parse` it back.
+If you need to store binary data, you could encode it in base64.
+
+Unlike the local storage API, this API exclusively uses the extension's support directory to store its data.
+No calls to internal Vicinae APIs are required, hence why all methods in this class are synchronous.
+Another major difference is that cache data is not encrypted, so it's not suitable to store secrets.
+(local storage currently isn't either, but that will change in the future)
+
+## Constructors
+
+### Constructor
+
+> **new Cache**(`options?`): `Cache`
+
+#### Parameters
+
+##### options?
+
+[`Options`](../@vicinae/namespaces/Cache/interfaces/Options.md)
+
+#### Returns
+
+`Cache`
+
+## Accessors
+
+### isEmpty
+
+#### Get Signature
+
+> **get** **isEmpty**(): `boolean`
+
+##### Returns
+
+`boolean`
+
+whether the cache is empty.
+
+***
+
+### storageDirectory
+
+#### Get Signature
+
+> **get** **storageDirectory**(): `string`
+
+##### Remarks
+
+This is provided for informative purpose only. You should not attempt to mutate anything
+in this directory by yourself. Also note that the way cache data is serialized on disk can (will) change
+across versions.
+
+##### Returns
+
+`string`
+
+the full path to the directory where the data is stored on disk.
+
+## Methods
+
+### clear()
+
+> **clear**(`options?`): `void`
+
+Clears all stored data.
+This also notifies registered subscribers (see [subscribe](#subscribe)) unless the  `notifySubscribers` option is set to `false`.
+
+#### Parameters
+
+##### options?
+
+###### notifySubscribers
+
+`boolean`
+
+#### Returns
+
+`void`
+
+***
+
+### get()
+
+> **get**(`key`): `undefined` \| `string`
+
+#### Parameters
+
+##### key
+
+`string`
+
+#### Returns
+
+`undefined` \| `string`
+
+the data for the given key, or `undefined` if there is no data.
+
+#### Remarks
+
+To solely check for existence of a key, use [has](#has).
+
+***
+
+### has()
+
+> **has**(`key`): `boolean`
+
+#### Parameters
+
+##### key
+
+`string`
+
+#### Returns
+
+`boolean`
+
+`true` if data for the key exists, `false` otherwise.
+
+#### Remarks
+
+You can use this method to check for entries without affecting the LRU access.
+
+***
+
+### remove()
+
+> **remove**(`key`): `boolean`
+
+Removes the data for the given key.
+This also notifies registered subscribers (see [subscribe](#subscribe)).
+
+#### Parameters
+
+##### key
+
+`string`
+
+#### Returns
+
+`boolean`
+
+`true` if data for the key was removed, `false` otherwise.
+
+***
+
+### set()
+
+> **set**(`key`, `data`): `void`
+
+Sets the data for the given key.
+If the data exceeds the configured `capacity`, the least recently used entries are removed.
+This also notifies registered subscribers (see [subscribe](#subscribe)).
+
+#### Parameters
+
+##### key
+
+`string`
+
+##### data
+
+`string`
+
+#### Returns
+
+`void`
+
+#### Remarks
+
+An individual cache entry cannot be bigger than the configured capacity. If this happens, an error will be thrown.
+
+***
+
+### subscribe()
+
+> **subscribe**(`subscriber`): [`Subscription`](../@vicinae/namespaces/Cache/type-aliases/Subscription.md)
+
+Registers a new subscriber that gets notified when cache data is set or removed.
+
+#### Parameters
+
+##### subscriber
+
+[`Subscriber`](../@vicinae/namespaces/Cache/type-aliases/Subscriber.md)
+
+#### Returns
+
+[`Subscription`](../@vicinae/namespaces/Cache/type-aliases/Subscription.md)
+
+a function that can be called to remove the subscriber.
+
+
+
+================================================
+FILE: typescript/api/docs/classes/LocalStorage.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / LocalStorage
+
+# Class: LocalStorage
+
+## Constructors
+
+### Constructor
+
+> **new LocalStorage**(): `LocalStorage`
+
+#### Returns
+
+`LocalStorage`
+
+## Methods
+
+### allItems()
+
+> `static` **allItems**(): `Promise`\<[`Values`](../@vicinae/namespaces/LocalStorage/type-aliases/Values.md)\>
+
+#### Returns
+
+`Promise`\<[`Values`](../@vicinae/namespaces/LocalStorage/type-aliases/Values.md)\>
+
+***
+
+### clear()
+
+> `static` **clear**(): `Promise`\<`void`\>
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### getItem()
+
+> `static` **getItem**\<`T`\>(`key`): `Promise`\<`undefined` \| `T`\>
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* [`Value`](../@vicinae/namespaces/LocalStorage/type-aliases/Value.md)
+
+#### Parameters
+
+##### key
+
+`string`
+
+#### Returns
+
+`Promise`\<`undefined` \| `T`\>
+
+***
+
+### removeItem()
+
+> `static` **removeItem**(`key`): `Promise`\<`void`\>
+
+#### Parameters
+
+##### key
+
+`string`
+
+#### Returns
+
+`Promise`\<`void`\>
+
+***
+
+### setItem()
+
+> `static` **setItem**(`key`, `value`): `Promise`\<`void`\>
+
+#### Parameters
+
+##### key
+
+`string`
+
+##### value
+
+[`Value`](../@vicinae/namespaces/LocalStorage/type-aliases/Value.md)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/classes/PKCEClient.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / PKCEClient
+
+# Class: PKCEClient
+
+## Constructors
+
+### Constructor
+
+> **new PKCEClient**(`options`): `PKCEClient`
+
+#### Parameters
+
+##### options
+
+[`Options`](../@vicinae/namespaces/OAuth/namespaces/PKCEClient/interfaces/Options.md)
+
+#### Returns
+
+`PKCEClient`
+
+## Properties
+
+### description?
+
+> `optional` **description**: `string`
+
+***
+
+### providerIcon?
+
+> `optional` **providerIcon**: [`ImageLike`](../@vicinae/namespaces/Image/type-aliases/ImageLike.md)
+
+***
+
+### providerId?
+
+> `optional` **providerId**: `string`
+
+***
+
+### providerName
+
+> **providerName**: `string`
+
+***
+
+### redirectMethod
+
+> **redirectMethod**: `OauthRedirectMethod`
+
+## Methods
+
+### authorizationRequest()
+
+> **authorizationRequest**(`options`): `Promise`\<[`AuthorizationRequest`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationRequest.md)\>
+
+Creates an authorization request for the provided authorization endpoint, client ID, and scopes.
+You need to first create the authorization request before calling OAuth.PKCEClient.authorize.
+
+#### Parameters
+
+##### options
+
+[`AuthorizationRequestOptions`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationRequestOptions.md)
+
+#### Returns
+
+`Promise`\<[`AuthorizationRequest`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationRequest.md)\>
+
+A promise for an [OAuth.AuthorizationRequest](../@vicinae/namespaces/OAuth/interfaces/AuthorizationRequest.md) that you can use as input for OAuth.PKCEClient.authorize.
+
+#### Remarks
+
+The generated code challenge for the PKCE request uses the S256 method.
+
+***
+
+### authorize()
+
+> **authorize**(`options`): `Promise`\<[`AuthorizationResponse`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationResponse.md)\>
+
+Starts the authorization and shows the OAuth overlay in Raycast.
+As parameter you can either directly use the returned request from OAuth.PKCEClient.authorizationRequest,
+or customize the URL by extracting parameters from [OAuth.AuthorizationRequest](../@vicinae/namespaces/OAuth/interfaces/AuthorizationRequest.md) and providing your own URL via AuthorizationOptions.
+Eventually the URL will be used to open the authorization page of the provider in the web browser.
+
+#### Parameters
+
+##### options
+
+[`AuthorizationRequest`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationRequest.md) | [`AuthorizationOptions`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationOptions.md)
+
+#### Returns
+
+`Promise`\<[`AuthorizationResponse`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationResponse.md)\>
+
+A promise for an [OAuth.AuthorizationResponse](../@vicinae/namespaces/OAuth/interfaces/AuthorizationResponse.md), which contains the authorization code needed for the token exchange.
+The promise is resolved when the user was redirected back from the provider's authorization page to the Raycast extension.
+
+***
+
+### buildAuthUrl()
+
+> **buildAuthUrl**(`options`, `state`, `codeChallenge`, `redirectURI`): `string`
+
+#### Parameters
+
+##### options
+
+[`AuthorizationRequestOptions`](../@vicinae/namespaces/OAuth/interfaces/AuthorizationRequestOptions.md)
+
+##### state
+
+`string`
+
+##### codeChallenge
+
+`string`
+
+##### redirectURI
+
+`string`
+
+#### Returns
+
+`string`
+
+***
+
+### getRedirectURI()
+
+> **getRedirectURI**(): `"https://raycast.com/redirect?packageName=Extension"` \| `"raycast://oauth?package_name=Extension"` \| `"com.raycast:/oauth?package_name=Extension"`
+
+#### Returns
+
+`"https://raycast.com/redirect?packageName=Extension"` \| `"raycast://oauth?package_name=Extension"` \| `"com.raycast:/oauth?package_name=Extension"`
+
+***
+
+### getTokens()
+
+> **getTokens**(): `Promise`\<`undefined` \| [`TokenSet`](../@vicinae/namespaces/OAuth/interfaces/TokenSet.md)\>
+
+Retrieves the stored [OAuth.TokenSet](../variables/OAuth.md#tokenset) for the client.
+You can use this to initially check whether the authorization flow should be initiated or
+the user is already logged in and you might have to refresh the access token.
+
+#### Returns
+
+`Promise`\<`undefined` \| [`TokenSet`](../@vicinae/namespaces/OAuth/interfaces/TokenSet.md)\>
+
+A promise that resolves when the token set has been retrieved.
+
+***
+
+### removeTokens()
+
+> **removeTokens**(): `Promise`\<`void`\>
+
+Removes the stored [OAuth.TokenSet](../variables/OAuth.md#tokenset) for the client.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+#### Remarks
+
+Raycast automatically shows a logout preference that removes the token set.
+Use this method only if you need to provide an additional logout option in your extension or you want to remove the token set because of a migration.
+
+***
+
+### setTokens()
+
+> **setTokens**(`options`): `Promise`\<`void`\>
+
+Securely stores a [OAuth.TokenSet](../variables/OAuth.md#tokenset) for the provider. Use this after fetching the access token from the provider.
+If the provider returns a a standard OAuth JSON token response, you can directly pass the [OAuth.TokenResponse](../@vicinae/namespaces/OAuth/interfaces/TokenResponse.md).
+At a minimum, you need to set the [OAuth.TokenSet.accessToken](../@vicinae/namespaces/OAuth/interfaces/TokenSet.md#accesstoken), and typically you also set [OAuth.TokenSet.refreshToken](../@vicinae/namespaces/OAuth/interfaces/TokenSet.md#refreshtoken) and [OAuth.TokenSet.isExpired](../@vicinae/namespaces/OAuth/interfaces/TokenSet.md#isexpired).
+Raycast automatically shows a logout preference for the extension when a token set was saved.
+
+#### Parameters
+
+##### options
+
+[`TokenSetOptions`](../@vicinae/namespaces/OAuth/interfaces/TokenSetOptions.md) | [`TokenResponse`](../@vicinae/namespaces/OAuth/interfaces/TokenResponse.md)
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A promise that resolves when the token set has been stored.
+
+#### Remarks
+
+If you want to make use of the convenience [OAuth.TokenSet.isExpired](../@vicinae/namespaces/OAuth/interfaces/TokenSet.md#isexpired) method, the property [OAuth.TokenSet.expiresIn](../@vicinae/namespaces/OAuth/interfaces/TokenSet.md#expiresin) must be configured.
+
+
+
+================================================
+FILE: typescript/api/docs/classes/Toast.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Toast
+
+# Class: Toast
+
+A Toast with a certain style, title, and message.
+
+## Example
+
+```typescript
+import { showToast, Toast } from "@raycast/api";
+import { setTimeout } from "timers/promises";
+
+export default async () => {
+  const toast = await showToast({ style: Toast.Style.Animated, title: "Uploading image" });
+
+  await setTimeout(1000);
+
+  toast.style = Toast.Style.Success;
+  toast.title = "Uploaded image";
+};
+```
+
+## Constructors
+
+### Constructor
+
+> **new Toast**(`props`): `Toast`
+
+Deprecated - Use `showToast` instead
+
+#### Parameters
+
+##### props
+
+[`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md)
+
+#### Returns
+
+`Toast`
+
+## Accessors
+
+### message
+
+#### Get Signature
+
+> **get** **message**(): `undefined` \| `string`
+
+An additional message for the Toast. Useful to show more information, e.g. an identifier of a newly created asset.
+
+##### Returns
+
+`undefined` \| `string`
+
+#### Set Signature
+
+> **set** **message**(`message`): `void`
+
+##### Parameters
+
+###### message
+
+`undefined` | `string`
+
+##### Returns
+
+`void`
+
+***
+
+### primaryAction
+
+#### Get Signature
+
+> **get** **primaryAction**(): `undefined` \| [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+The primary Action the user can take when hovering on the Toast.
+
+##### Returns
+
+`undefined` \| [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+#### Set Signature
+
+> **set** **primaryAction**(`action`): `void`
+
+##### Parameters
+
+###### action
+
+`undefined` | [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+##### Returns
+
+`void`
+
+***
+
+### secondaryAction
+
+#### Get Signature
+
+> **get** **secondaryAction**(): `undefined` \| [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+The secondary Action the user can take when hovering on the Toast.
+
+##### Returns
+
+`undefined` \| [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+#### Set Signature
+
+> **set** **secondaryAction**(`action`): `void`
+
+##### Parameters
+
+###### action
+
+`undefined` | [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+##### Returns
+
+`void`
+
+***
+
+### style
+
+#### Get Signature
+
+> **get** **style**(): [`Style`](../@vicinae/namespaces/Toast/enumerations/Style.md)
+
+The style of a Toast.
+
+##### Returns
+
+[`Style`](../@vicinae/namespaces/Toast/enumerations/Style.md)
+
+#### Set Signature
+
+> **set** **style**(`style`): `void`
+
+##### Parameters
+
+###### style
+
+[`Style`](../@vicinae/namespaces/Toast/enumerations/Style.md)
+
+##### Returns
+
+`void`
+
+***
+
+### title
+
+#### Get Signature
+
+> **get** **title**(): `string`
+
+The title of a Toast. Displayed on the top.
+
+##### Returns
+
+`string`
+
+#### Set Signature
+
+> **set** **title**(`title`): `void`
+
+##### Parameters
+
+###### title
+
+`string`
+
+##### Returns
+
+`void`
+
+## Methods
+
+### hide()
+
+> **hide**(): `Promise`\<`void`\>
+
+Hides the Toast.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A Promise that resolves when toast is hidden.
+
+***
+
+### show()
+
+> **show**(): `Promise`\<`void`\>
+
+Shows the Toast.
+
+#### Returns
+
+`Promise`\<`void`\>
+
+A Promise that resolves when the toast is shown.
+
+
+
+================================================
+FILE: typescript/api/docs/enumerations/Color.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Color
+
+# Enumeration: Color
+
+## Enumeration Members
+
+### Blue
+
+> **Blue**: `"blue"`
+
+***
+
+### Green
+
+> **Green**: `"green"`
+
+***
+
+### Magenta
+
+> **Magenta**: `"magenta"`
+
+***
+
+### Orange
+
+> **Orange**: `"orange"`
+
+***
+
+### PrimaryText
+
+> **PrimaryText**: `"primary-text"`
+
+***
+
+### Purple
+
+> **Purple**: `"purple"`
+
+***
+
+### Red
+
+> **Red**: `"red"`
+
+***
+
+### SecondaryText
+
+> **SecondaryText**: `"secondary-text"`
+
+***
+
+### Yellow
+
+> **Yellow**: `"yellow"`
+
+
+
+================================================
+FILE: typescript/api/docs/enumerations/Icon.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Icon
+
+# Enumeration: Icon
+
+## Enumeration Members
+
+### AddPerson
+
+> **AddPerson**: `"add-person"`
+
+***
+
+### Airplane
+
+> **Airplane**: `"airplane"`
+
+***
+
+### AirplaneFilled
+
+> **AirplaneFilled**: `"airplane-filled"`
+
+***
+
+### AirplaneLanding
+
+> **AirplaneLanding**: `"airplane-landing"`
+
+***
+
+### AirplaneTakeoff
+
+> **AirplaneTakeoff**: `"airplane-takeoff"`
+
+***
+
+### Airpods
+
+> **Airpods**: `"airpods"`
+
+***
+
+### Alarm
+
+> **Alarm**: `"alarm"`
+
+***
+
+### AlarmRinging
+
+> **AlarmRinging**: `"alarm-ringing"`
+
+***
+
+### AlignCentre
+
+> **AlignCentre**: `"align-centre"`
+
+***
+
+### AlignLeft
+
+> **AlignLeft**: `"align-left"`
+
+***
+
+### AlignRight
+
+> **AlignRight**: `"align-right"`
+
+***
+
+### AmericanFootball
+
+> **AmericanFootball**: `"american-football"`
+
+***
+
+### Anchor
+
+> **Anchor**: `"anchor"`
+
+***
+
+### AppWindow
+
+> **AppWindow**: `"app-window"`
+
+***
+
+### AppWindowGrid2x2
+
+> **AppWindowGrid2x2**: `"app-window-grid-2x2"`
+
+***
+
+### AppWindowGrid3x3
+
+> **AppWindowGrid3x3**: `"app-window-grid-3x3"`
+
+***
+
+### AppWindowList
+
+> **AppWindowList**: `"app-window-list"`
+
+***
+
+### AppWindowSidebarLeft
+
+> **AppWindowSidebarLeft**: `"app-window-sidebar-left"`
+
+***
+
+### AppWindowSidebarRight
+
+> **AppWindowSidebarRight**: `"app-window-sidebar-right"`
+
+***
+
+### ArrowClockwise
+
+> **ArrowClockwise**: `"arrow-clockwise"`
+
+***
+
+### ArrowCounterClockwise
+
+> **ArrowCounterClockwise**: `"arrow-counter-clockwise"`
+
+***
+
+### ArrowDown
+
+> **ArrowDown**: `"arrow-down"`
+
+***
+
+### ArrowDownCircle
+
+> **ArrowDownCircle**: `"arrow-down-circle"`
+
+***
+
+### ArrowDownCircleFilled
+
+> **ArrowDownCircleFilled**: `"arrow-down-circle-filled"`
+
+***
+
+### ArrowLeft
+
+> **ArrowLeft**: `"arrow-left"`
+
+***
+
+### ArrowLeftCircle
+
+> **ArrowLeftCircle**: `"arrow-left-circle"`
+
+***
+
+### ArrowLeftCircleFilled
+
+> **ArrowLeftCircleFilled**: `"arrow-left-circle-filled"`
+
+***
+
+### ArrowNe
+
+> **ArrowNe**: `"arrow-ne"`
+
+***
+
+### ArrowRight
+
+> **ArrowRight**: `"arrow-right"`
+
+***
+
+### ArrowRightCircle
+
+> **ArrowRightCircle**: `"arrow-right-circle"`
+
+***
+
+### ArrowRightCircleFilled
+
+> **ArrowRightCircleFilled**: `"arrow-right-circle-filled"`
+
+***
+
+### ArrowsContract
+
+> **ArrowsContract**: `"arrows-contract"`
+
+***
+
+### ArrowsExpand
+
+> **ArrowsExpand**: `"arrows-expand"`
+
+***
+
+### ArrowUp
+
+> **ArrowUp**: `"arrow-up"`
+
+***
+
+### ArrowUpCircle
+
+> **ArrowUpCircle**: `"arrow-up-circle"`
+
+***
+
+### ArrowUpCircleFilled
+
+> **ArrowUpCircleFilled**: `"arrow-up-circle-filled"`
+
+***
+
+### AtSymbol
+
+> **AtSymbol**: `"at-symbol"`
+
+***
+
+### BandAid
+
+> **BandAid**: `"band-aid"`
+
+***
+
+### BankNote
+
+> **BankNote**: `"bank-note"`
+
+***
+
+### BarChart
+
+> **BarChart**: `"bar-chart"`
+
+***
+
+### BarCode
+
+> **BarCode**: `"bar-code"`
+
+***
+
+### BathTub
+
+> **BathTub**: `"bath-tub"`
+
+***
+
+### Battery
+
+> **Battery**: `"battery"`
+
+***
+
+### BatteryCharging
+
+> **BatteryCharging**: `"battery-charging"`
+
+***
+
+### BatteryDisabled
+
+> **BatteryDisabled**: `"battery-disabled"`
+
+***
+
+### Bell
+
+> **Bell**: `"bell"`
+
+***
+
+### BellDisabled
+
+> **BellDisabled**: `"bell-disabled"`
+
+***
+
+### Bike
+
+> **Bike**: `"bike"`
+
+***
+
+### Binoculars
+
+> **Binoculars**: `"binoculars"`
+
+***
+
+### Bird
+
+> **Bird**: `"bird"`
+
+***
+
+### BlankDocument
+
+> **BlankDocument**: `"blank-document"`
+
+***
+
+### Bluetooth
+
+> **Bluetooth**: `"bluetooth"`
+
+***
+
+### Boat
+
+> **Boat**: `"boat"`
+
+***
+
+### Bold
+
+> **Bold**: `"bold"`
+
+***
+
+### Bolt
+
+> **Bolt**: `"bolt"`
+
+***
+
+### BoltDisabled
+
+> **BoltDisabled**: `"bolt-disabled"`
+
+***
+
+### Book
+
+> **Book**: `"book"`
+
+***
+
+### Bookmark
+
+> **Bookmark**: `"bookmark"`
+
+***
+
+### Box
+
+> **Box**: `"box"`
+
+***
+
+### Brush
+
+> **Brush**: `"brush"`
+
+***
+
+### Bubble
+
+> **Bubble**: `"speech-bubble"`
+
+***
+
+### Bug
+
+> **Bug**: `"bug"`
+
+***
+
+### Building
+
+> **Building**: `"building"`
+
+***
+
+### BulletPoints
+
+> **BulletPoints**: `"bullet-points"`
+
+***
+
+### BullsEye
+
+> **BullsEye**: `"bulls-eye"`
+
+***
+
+### Buoy
+
+> **Buoy**: `"buoy"`
+
+***
+
+### Calculator
+
+> **Calculator**: `"calculator"`
+
+***
+
+### Calendar
+
+> **Calendar**: `"calendar"`
+
+***
+
+### Camera
+
+> **Camera**: `"camera"`
+
+***
+
+### Car
+
+> **Car**: `"car"`
+
+***
+
+### Cart
+
+> **Cart**: `"cart"`
+
+***
+
+### Cd
+
+> **Cd**: `"cd"`
+
+***
+
+### Center
+
+> **Center**: `"center"`
+
+***
+
+### Check
+
+> **Check**: `"check"`
+
+***
+
+### CheckCircle
+
+> **CheckCircle**: `"check-circle"`
+
+***
+
+### Checkmark
+
+> **Checkmark**: `"check-circle"`
+
+***
+
+### CheckRosette
+
+> **CheckRosette**: `"check-rosette"`
+
+***
+
+### ChessPiece
+
+> **ChessPiece**: `"chess-piece"`
+
+***
+
+### ChevronDown
+
+> **ChevronDown**: `"chevron-down"`
+
+***
+
+### ChevronDownSmall
+
+> **ChevronDownSmall**: `"chevron-down-small"`
+
+***
+
+### ChevronLeft
+
+> **ChevronLeft**: `"chevron-left"`
+
+***
+
+### ChevronLeftSmall
+
+> **ChevronLeftSmall**: `"chevron-left-small"`
+
+***
+
+### ChevronRight
+
+> **ChevronRight**: `"chevron-right"`
+
+***
+
+### ChevronRightSmall
+
+> **ChevronRightSmall**: `"chevron-right-small"`
+
+***
+
+### ChevronUp
+
+> **ChevronUp**: `"chevron-up"`
+
+***
+
+### ChevronUpSmall
+
+> **ChevronUpSmall**: `"chevron-up-small"`
+
+***
+
+### Circle
+
+> **Circle**: `"circle"`
+
+***
+
+### CircleEllipsis
+
+> **CircleEllipsis**: `"circle-ellipsis"`
+
+***
+
+### CircleFilled
+
+> **CircleFilled**: `"circle-filled"`
+
+***
+
+### CircleProgress
+
+> **CircleProgress**: `"circle-progress"`
+
+***
+
+### CircleProgress100
+
+> **CircleProgress100**: `"circle-progress-100"`
+
+***
+
+### CircleProgress25
+
+> **CircleProgress25**: `"circle-progress-25"`
+
+***
+
+### CircleProgress50
+
+> **CircleProgress50**: `"circle-progress-50"`
+
+***
+
+### CircleProgress75
+
+> **CircleProgress75**: `"circle-progress-75"`
+
+***
+
+### ClearFormatting
+
+> **ClearFormatting**: `"clear-formatting"`
+
+***
+
+### Clipboard
+
+> **Clipboard**: `"copy-clipboard"`
+
+***
+
+### Clock
+
+> **Clock**: `"clock"`
+
+***
+
+### Cloud
+
+> **Cloud**: `"cloud"`
+
+***
+
+### CloudLightning
+
+> **CloudLightning**: `"cloud-lightning"`
+
+***
+
+### CloudRain
+
+> **CloudRain**: `"cloud-rain"`
+
+***
+
+### CloudSnow
+
+> **CloudSnow**: `"cloud-snow"`
+
+***
+
+### CloudSun
+
+> **CloudSun**: `"cloud-sun"`
+
+***
+
+### Code
+
+> **Code**: `"code"`
+
+***
+
+### CodeBlock
+
+> **CodeBlock**: `"code-block"`
+
+***
+
+### Cog
+
+> **Cog**: `"cog"`
+
+***
+
+### Coin
+
+> **Coin**: `"coin"`
+
+***
+
+### Coins
+
+> **Coins**: `"coins"`
+
+***
+
+### CommandSymbol
+
+> **CommandSymbol**: `"command-symbol"`
+
+***
+
+### Compass
+
+> **Compass**: `"compass"`
+
+***
+
+### ComputerChip
+
+> **ComputerChip**: `"computer-chip"`
+
+***
+
+### Contrast
+
+> **Contrast**: `"contrast"`
+
+***
+
+### CopyClipboard
+
+> **CopyClipboard**: `"copy-clipboard"`
+
+***
+
+### CreditCard
+
+> **CreditCard**: `"credit-card"`
+
+***
+
+### CricketBall
+
+> **CricketBall**: `"cricket-ball"`
+
+***
+
+### Crop
+
+> **Crop**: `"crop"`
+
+***
+
+### Crown
+
+> **Crown**: `"crown"`
+
+***
+
+### Crypto
+
+> **Crypto**: `"crypto"`
+
+***
+
+### DeleteDocument
+
+> **DeleteDocument**: `"delete-document"`
+
+***
+
+### Desktop
+
+> **Desktop**: `"desktop"`
+
+***
+
+### Dna
+
+> **Dna**: `"dna"`
+
+***
+
+### Document
+
+> **Document**: `"blank-document"`
+
+***
+
+### Dot
+
+> **Dot**: `"dot"`
+
+***
+
+### Download
+
+> **Download**: `"download"`
+
+***
+
+### EditShape
+
+> **EditShape**: `"edit-shape"`
+
+***
+
+### Eject
+
+> **Eject**: `"eject"`
+
+***
+
+### Ellipsis
+
+> **Ellipsis**: `"ellipsis"`
+
+***
+
+### Emoji
+
+> **Emoji**: `"emoji"`
+
+***
+
+### Envelope
+
+> **Envelope**: `"envelope"`
+
+***
+
+### Eraser
+
+> **Eraser**: `"eraser"`
+
+***
+
+### Exclamationmark
+
+> **Exclamationmark**: `"exclamationmark"`
+
+***
+
+### ExclamationMark
+
+> **ExclamationMark**: `"important-01"`
+
+***
+
+### Exclamationmark2
+
+> **Exclamationmark2**: `"exclamationmark-2"`
+
+***
+
+### Exclamationmark3
+
+> **Exclamationmark3**: `"exclamationmark-3"`
+
+***
+
+### Eye
+
+> **Eye**: `"eye"`
+
+***
+
+### EyeDisabled
+
+> **EyeDisabled**: `"eye-disabled"`
+
+***
+
+### EyeDropper
+
+> **EyeDropper**: `"eye-dropper"`
+
+***
+
+### ~~EyeSlash~~
+
+> **EyeSlash**: `"eye-disabled"`
+
+#### Deprecated
+
+Use [Icon.EyeDisabled](#eyedisabled) instead.
+
+***
+
+### Female
+
+> **Female**: `"female"`
+
+***
+
+### FilmStrip
+
+> **FilmStrip**: `"film-strip"`
+
+***
+
+### Filter
+
+> **Filter**: `"filter"`
+
+***
+
+### Finder
+
+> **Finder**: `"finder"`
+
+***
+
+### Fingerprint
+
+> **Fingerprint**: `"fingerprint"`
+
+***
+
+### Flag
+
+> **Flag**: `"flag"`
+
+***
+
+### Folder
+
+> **Folder**: `"folder"`
+
+***
+
+### Footprints
+
+> **Footprints**: `"footprints"`
+
+***
+
+### Forward
+
+> **Forward**: `"forward"`
+
+***
+
+### ForwardFilled
+
+> **ForwardFilled**: `"forward-filled"`
+
+***
+
+### FountainTip
+
+> **FountainTip**: `"fountain-tip"`
+
+***
+
+### FullSignal
+
+> **FullSignal**: `"full-signal"`
+
+***
+
+### GameController
+
+> **GameController**: `"game-controller"`
+
+***
+
+### Gauge
+
+> **Gauge**: `"gauge"`
+
+***
+
+### Gear
+
+> **Gear**: `"cog"`
+
+***
+
+### Geopin
+
+> **Geopin**: `"geopin"`
+
+***
+
+### Germ
+
+> **Germ**: `"germ"`
+
+***
+
+### Gift
+
+> **Gift**: `"gift"`
+
+***
+
+### Glasses
+
+> **Glasses**: `"glasses"`
+
+***
+
+### Globe
+
+> **Globe**: `"globe-01"`
+
+***
+
+### Goal
+
+> **Goal**: `"goal"`
+
+***
+
+### Hammer
+
+> **Hammer**: `"hammer"`
+
+***
+
+### HardDrive
+
+> **HardDrive**: `"hard-drive"`
+
+***
+
+### Hashtag
+
+> **Hashtag**: `"hashtag"`
+
+***
+
+### Headphones
+
+> **Headphones**: `"headphones"`
+
+***
+
+### Heart
+
+> **Heart**: `"heart"`
+
+***
+
+### Heartbeat
+
+> **Heartbeat**: `"heartbeat"`
+
+***
+
+### HeartDisabled
+
+> **HeartDisabled**: `"heart-disabled"`
+
+***
+
+### Highlight
+
+> **Highlight**: `"highlight"`
+
+***
+
+### Hourglass
+
+> **Hourglass**: `"hourglass"`
+
+***
+
+### House
+
+> **House**: `"house"`
+
+***
+
+### Image
+
+> **Image**: `"image"`
+
+***
+
+### Important
+
+> **Important**: `"important-01"`
+
+***
+
+### Info
+
+> **Info**: `"info-01"`
+
+***
+
+### Italics
+
+> **Italics**: `"italics"`
+
+***
+
+### Key
+
+> **Key**: `"key"`
+
+***
+
+### Keyboard
+
+> **Keyboard**: `"keyboard"`
+
+***
+
+### Layers
+
+> **Layers**: `"layers"`
+
+***
+
+### Leaderboard
+
+> **Leaderboard**: `"leaderboard"`
+
+***
+
+### Leaf
+
+> **Leaf**: `"leaf"`
+
+***
+
+### LevelMeter
+
+> **LevelMeter**: `"signal-2"`
+
+***
+
+### LightBulb
+
+> **LightBulb**: `"light-bulb"`
+
+***
+
+### LightBulbOff
+
+> **LightBulbOff**: `"light-bulb-off"`
+
+***
+
+### LineChart
+
+> **LineChart**: `"line-chart"`
+
+***
+
+### Link
+
+> **Link**: `"link"`
+
+***
+
+### List
+
+> **List**: `"app-window-list"`
+
+***
+
+### Livestream
+
+> **Livestream**: `"livestream-01"`
+
+***
+
+### LivestreamDisabled
+
+> **LivestreamDisabled**: `"livestream-disabled-01"`
+
+***
+
+### Lock
+
+> **Lock**: `"lock"`
+
+***
+
+### LockDisabled
+
+> **LockDisabled**: `"lock-disabled"`
+
+***
+
+### LockUnlocked
+
+> **LockUnlocked**: `"lock-unlocked"`
+
+***
+
+### Logout
+
+> **Logout**: `"logout"`
+
+***
+
+### Lorry
+
+> **Lorry**: `"lorry"`
+
+***
+
+### Lowercase
+
+> **Lowercase**: `"lowercase"`
+
+***
+
+### MagnifyingGlass
+
+> **MagnifyingGlass**: `"magnifying-glass"`
+
+***
+
+### Male
+
+> **Male**: `"male"`
+
+***
+
+### Map
+
+> **Map**: `"map"`
+
+***
+
+### Mask
+
+> **Mask**: `"mask"`
+
+***
+
+### Maximize
+
+> **Maximize**: `"maximize"`
+
+***
+
+### MedicalSupport
+
+> **MedicalSupport**: `"medical-support"`
+
+***
+
+### Megaphone
+
+> **Megaphone**: `"megaphone"`
+
+***
+
+### MemoryChip
+
+> **MemoryChip**: `"computer-chip"`
+
+***
+
+### MemoryStick
+
+> **MemoryStick**: `"memory-stick"`
+
+***
+
+### Message
+
+> **Message**: `"speech-bubble"`
+
+***
+
+### Microphone
+
+> **Microphone**: `"microphone"`
+
+***
+
+### MicrophoneDisabled
+
+> **MicrophoneDisabled**: `"microphone-disabled"`
+
+***
+
+### Minimize
+
+> **Minimize**: `"minimize"`
+
+***
+
+### Minus
+
+> **Minus**: `"minus"`
+
+***
+
+### MinusCircle
+
+> **MinusCircle**: `"minus-circle"`
+
+***
+
+### MinusCircleFilled
+
+> **MinusCircleFilled**: `"minus-circle-filled"`
+
+***
+
+### Mobile
+
+> **Mobile**: `"mobile"`
+
+***
+
+### Monitor
+
+> **Monitor**: `"monitor"`
+
+***
+
+### Moon
+
+> **Moon**: `"moon"`
+
+***
+
+### Mountain
+
+> **Mountain**: `"mountain"`
+
+***
+
+### Mouse
+
+> **Mouse**: `"mouse"`
+
+***
+
+### Multiply
+
+> **Multiply**: `"multiply"`
+
+***
+
+### Music
+
+> **Music**: `"music"`
+
+***
+
+### Network
+
+> **Network**: `"network"`
+
+***
+
+### NewDocument
+
+> **NewDocument**: `"new-document"`
+
+***
+
+### NewFolder
+
+> **NewFolder**: `"new-folder"`
+
+***
+
+### Number00
+
+> **Number00**: `"number-00"`
+
+***
+
+### Number01
+
+> **Number01**: `"number-01"`
+
+***
+
+### Number02
+
+> **Number02**: `"number-02"`
+
+***
+
+### Number03
+
+> **Number03**: `"number-03"`
+
+***
+
+### Number04
+
+> **Number04**: `"number-04"`
+
+***
+
+### Number05
+
+> **Number05**: `"number-05"`
+
+***
+
+### Number06
+
+> **Number06**: `"number-06"`
+
+***
+
+### Number07
+
+> **Number07**: `"number-07"`
+
+***
+
+### Number08
+
+> **Number08**: `"number-08"`
+
+***
+
+### Number09
+
+> **Number09**: `"number-09"`
+
+***
+
+### Number10
+
+> **Number10**: `"number-10"`
+
+***
+
+### Number11
+
+> **Number11**: `"number-11"`
+
+***
+
+### Number12
+
+> **Number12**: `"number-12"`
+
+***
+
+### Number13
+
+> **Number13**: `"number-13"`
+
+***
+
+### Number14
+
+> **Number14**: `"number-14"`
+
+***
+
+### Number15
+
+> **Number15**: `"number-15"`
+
+***
+
+### Number16
+
+> **Number16**: `"number"`
+
+***
+
+### Number17
+
+> **Number17**: `"number-17"`
+
+***
+
+### Number18
+
+> **Number18**: `"number-18"`
+
+***
+
+### Number19
+
+> **Number19**: `"number-19"`
+
+***
+
+### Number20
+
+> **Number20**: `"number-20"`
+
+***
+
+### Number21
+
+> **Number21**: `"number-21"`
+
+***
+
+### Number22
+
+> **Number22**: `"number-22"`
+
+***
+
+### Number23
+
+> **Number23**: `"number-23"`
+
+***
+
+### Number24
+
+> **Number24**: `"number-24"`
+
+***
+
+### Number25
+
+> **Number25**: `"number-25"`
+
+***
+
+### Number26
+
+> **Number26**: `"number-26"`
+
+***
+
+### Number27
+
+> **Number27**: `"number-27"`
+
+***
+
+### Number28
+
+> **Number28**: `"number-28"`
+
+***
+
+### Number29
+
+> **Number29**: `"number-29"`
+
+***
+
+### Number30
+
+> **Number30**: `"number-30"`
+
+***
+
+### Number31
+
+> **Number31**: `"number-31"`
+
+***
+
+### Number32
+
+> **Number32**: `"number-32"`
+
+***
+
+### Number33
+
+> **Number33**: `"number-33"`
+
+***
+
+### Number34
+
+> **Number34**: `"number-34"`
+
+***
+
+### Number35
+
+> **Number35**: `"number-35"`
+
+***
+
+### Number36
+
+> **Number36**: `"number-36"`
+
+***
+
+### Number37
+
+> **Number37**: `"number-37"`
+
+***
+
+### Number38
+
+> **Number38**: `"number-38"`
+
+***
+
+### Number39
+
+> **Number39**: `"number-39"`
+
+***
+
+### Number40
+
+> **Number40**: `"number-40"`
+
+***
+
+### Number41
+
+> **Number41**: `"number-41"`
+
+***
+
+### Number42
+
+> **Number42**: `"number-42"`
+
+***
+
+### Number43
+
+> **Number43**: `"number-43"`
+
+***
+
+### Number44
+
+> **Number44**: `"number-44"`
+
+***
+
+### Number45
+
+> **Number45**: `"number-45"`
+
+***
+
+### Number46
+
+> **Number46**: `"number-46"`
+
+***
+
+### Number47
+
+> **Number47**: `"number-47"`
+
+***
+
+### Number48
+
+> **Number48**: `"number-48"`
+
+***
+
+### Number49
+
+> **Number49**: `"number-49"`
+
+***
+
+### Number50
+
+> **Number50**: `"number-50"`
+
+***
+
+### Number51
+
+> **Number51**: `"number-51"`
+
+***
+
+### Number52
+
+> **Number52**: `"number-52"`
+
+***
+
+### Number53
+
+> **Number53**: `"number-53"`
+
+***
+
+### Number54
+
+> **Number54**: `"number-54"`
+
+***
+
+### Number55
+
+> **Number55**: `"number-55"`
+
+***
+
+### Number56
+
+> **Number56**: `"number-56"`
+
+***
+
+### Number57
+
+> **Number57**: `"number-57"`
+
+***
+
+### Number58
+
+> **Number58**: `"number-58"`
+
+***
+
+### Number59
+
+> **Number59**: `"number-59"`
+
+***
+
+### Number60
+
+> **Number60**: `"number-60"`
+
+***
+
+### Number61
+
+> **Number61**: `"number-61"`
+
+***
+
+### Number62
+
+> **Number62**: `"number-62"`
+
+***
+
+### Number63
+
+> **Number63**: `"number-63"`
+
+***
+
+### Number64
+
+> **Number64**: `"number-64"`
+
+***
+
+### Number65
+
+> **Number65**: `"number-65"`
+
+***
+
+### Number66
+
+> **Number66**: `"number-66"`
+
+***
+
+### Number67
+
+> **Number67**: `"number-67"`
+
+***
+
+### Number68
+
+> **Number68**: `"number-68"`
+
+***
+
+### Number69
+
+> **Number69**: `"number-69"`
+
+***
+
+### Number70
+
+> **Number70**: `"number-70"`
+
+***
+
+### Number71
+
+> **Number71**: `"number-71"`
+
+***
+
+### Number72
+
+> **Number72**: `"number-72"`
+
+***
+
+### Number73
+
+> **Number73**: `"number-73"`
+
+***
+
+### Number74
+
+> **Number74**: `"number-74"`
+
+***
+
+### Number75
+
+> **Number75**: `"number-75"`
+
+***
+
+### Number76
+
+> **Number76**: `"number-76"`
+
+***
+
+### Number77
+
+> **Number77**: `"number-77"`
+
+***
+
+### Number78
+
+> **Number78**: `"number-78"`
+
+***
+
+### Number79
+
+> **Number79**: `"number-79"`
+
+***
+
+### Number80
+
+> **Number80**: `"number-80"`
+
+***
+
+### Number81
+
+> **Number81**: `"number-81"`
+
+***
+
+### Number82
+
+> **Number82**: `"number-82"`
+
+***
+
+### Number83
+
+> **Number83**: `"number-83"`
+
+***
+
+### Number84
+
+> **Number84**: `"number-84"`
+
+***
+
+### Number85
+
+> **Number85**: `"number-85"`
+
+***
+
+### Number86
+
+> **Number86**: `"number-86"`
+
+***
+
+### Number87
+
+> **Number87**: `"number-87"`
+
+***
+
+### Number88
+
+> **Number88**: `"number-88"`
+
+***
+
+### Number89
+
+> **Number89**: `"number-89"`
+
+***
+
+### Number90
+
+> **Number90**: `"number-90"`
+
+***
+
+### Number91
+
+> **Number91**: `"number-91"`
+
+***
+
+### Number92
+
+> **Number92**: `"number-92"`
+
+***
+
+### Number93
+
+> **Number93**: `"number-93"`
+
+***
+
+### Number94
+
+> **Number94**: `"number-94"`
+
+***
+
+### Number95
+
+> **Number95**: `"number-95"`
+
+***
+
+### Number96
+
+> **Number96**: `"number-96"`
+
+***
+
+### Number97
+
+> **Number97**: `"number-97"`
+
+***
+
+### Number98
+
+> **Number98**: `"number-98"`
+
+***
+
+### Number99
+
+> **Number99**: `"number-99"`
+
+***
+
+### Paperclip
+
+> **Paperclip**: `"paperclip"`
+
+***
+
+### Paragraph
+
+> **Paragraph**: `"paragraph"`
+
+***
+
+### Patch
+
+> **Patch**: `"patch"`
+
+***
+
+### Pause
+
+> **Pause**: `"pause"`
+
+***
+
+### PauseFilled
+
+> **PauseFilled**: `"pause-filled"`
+
+***
+
+### Pencil
+
+> **Pencil**: `"pencil"`
+
+***
+
+### Person
+
+> **Person**: `"person"`
+
+***
+
+### PersonCircle
+
+> **PersonCircle**: `"person-circle"`
+
+***
+
+### PersonLines
+
+> **PersonLines**: `"person-lines"`
+
+***
+
+### Phone
+
+> **Phone**: `"phone"`
+
+***
+
+### PhoneRinging
+
+> **PhoneRinging**: `"phone-ringing"`
+
+***
+
+### PieChart
+
+> **PieChart**: `"pie-chart"`
+
+***
+
+### Pill
+
+> **Pill**: `"pill"`
+
+***
+
+### Pin
+
+> **Pin**: `"pin"`
+
+***
+
+### PinDisabled
+
+> **PinDisabled**: `"pin-disabled"`
+
+***
+
+### Play
+
+> **Play**: `"play"`
+
+***
+
+### PlayFilled
+
+> **PlayFilled**: `"play-filled"`
+
+***
+
+### Plug
+
+> **Plug**: `"plug"`
+
+***
+
+### Plus
+
+> **Plus**: `"plus"`
+
+***
+
+### PlusCircle
+
+> **PlusCircle**: `"plus-circle"`
+
+***
+
+### PlusCircleFilled
+
+> **PlusCircleFilled**: `"plus-circle-filled"`
+
+***
+
+### PlusMinusDivideMultiply
+
+> **PlusMinusDivideMultiply**: `"plus-minus-divide-multiply"`
+
+***
+
+### PlusSquare
+
+> **PlusSquare**: `"plus-square"`
+
+***
+
+### PlusTopRightSquare
+
+> **PlusTopRightSquare**: `"plus-top-right-square"`
+
+***
+
+### Power
+
+> **Power**: `"power"`
+
+***
+
+### Print
+
+> **Print**: `"print"`
+
+***
+
+### QuestionMark
+
+> **QuestionMark**: `"question-mark-circle"`
+
+***
+
+### QuestionMarkCircle
+
+> **QuestionMarkCircle**: `"question-mark-circle"`
+
+***
+
+### QuotationMarks
+
+> **QuotationMarks**: `"quotation-marks"`
+
+***
+
+### QuoteBlock
+
+> **QuoteBlock**: `"quote-block"`
+
+***
+
+### Racket
+
+> **Racket**: `"racket"`
+
+***
+
+### Raindrop
+
+> **Raindrop**: `"raindrop"`
+
+***
+
+### RaycastLogoNeg
+
+> **RaycastLogoNeg**: `"raycast-logo-neg"`
+
+***
+
+### RaycastLogoPos
+
+> **RaycastLogoPos**: `"raycast-logo-pos"`
+
+***
+
+### Receipt
+
+> **Receipt**: `"receipt"`
+
+***
+
+### Redo
+
+> **Redo**: `"redo"`
+
+***
+
+### RemovePerson
+
+> **RemovePerson**: `"remove-person"`
+
+***
+
+### Repeat
+
+> **Repeat**: `"repeat"`
+
+***
+
+### Reply
+
+> **Reply**: `"reply"`
+
+***
+
+### Rewind
+
+> **Rewind**: `"rewind"`
+
+***
+
+### RewindFilled
+
+> **RewindFilled**: `"rewind-filled"`
+
+***
+
+### Rocket
+
+> **Rocket**: `"rocket"`
+
+***
+
+### Rosette
+
+> **Rosette**: `"rosette"`
+
+***
+
+### RotateAntiClockwise
+
+> **RotateAntiClockwise**: `"rotate-anti-clockwise"`
+
+***
+
+### RotateClockwise
+
+> **RotateClockwise**: `"rotate-clockwise"`
+
+***
+
+### Ruler
+
+> **Ruler**: `"ruler"`
+
+***
+
+### SaveDocument
+
+> **SaveDocument**: `"save-document"`
+
+***
+
+### Shield
+
+> **Shield**: `"shield-01"`
+
+***
+
+### ShortParagraph
+
+> **ShortParagraph**: `"short-paragraph"`
+
+***
+
+### Shuffle
+
+> **Shuffle**: `"shuffle"`
+
+***
+
+### Sidebar
+
+> **Sidebar**: `"app-window-sidebar-right"`
+
+***
+
+### Signal1
+
+> **Signal1**: `"signal-1"`
+
+***
+
+### Signal2
+
+> **Signal2**: `"signal-2"`
+
+***
+
+### Signal3
+
+> **Signal3**: `"signal-3"`
+
+***
+
+### Snippets
+
+> **Snippets**: `"snippets"`
+
+***
+
+### Snowflake
+
+> **Snowflake**: `"snowflake"`
+
+***
+
+### SoccerBall
+
+> **SoccerBall**: `"soccer-ball"`
+
+***
+
+### ~~SpeakerArrowDown~~
+
+> **SpeakerArrowDown**: `"speaker-down"`
+
+#### Deprecated
+
+Use [Icon.SpeakerDown](#speakerdown) instead.
+
+***
+
+### ~~SpeakerArrowUp~~
+
+> **SpeakerArrowUp**: `"speaker-up"`
+
+#### Deprecated
+
+Use [Icon.SpeakerUp](#speakerup) instead.
+
+***
+
+### SpeakerDown
+
+> **SpeakerDown**: `"speaker-down"`
+
+***
+
+### SpeakerHigh
+
+> **SpeakerHigh**: `"speaker-high"`
+
+***
+
+### SpeakerLow
+
+> **SpeakerLow**: `"speaker-low"`
+
+***
+
+### SpeakerOff
+
+> **SpeakerOff**: `"speaker-off"`
+
+***
+
+### SpeakerOn
+
+> **SpeakerOn**: `"speaker-on"`
+
+***
+
+### ~~SpeakerSlash~~
+
+> **SpeakerSlash**: `"speaker-off"`
+
+#### Deprecated
+
+Use [Icon.SpeakerOff](#speakeroff) instead.
+
+***
+
+### SpeakerUp
+
+> **SpeakerUp**: `"speaker-up"`
+
+***
+
+### SpeechBubble
+
+> **SpeechBubble**: `"speech-bubble"`
+
+***
+
+### SpeechBubbleActive
+
+> **SpeechBubbleActive**: `"speech-bubble-active"`
+
+***
+
+### SpeechBubbleImportant
+
+> **SpeechBubbleImportant**: `"speech-bubble-important"`
+
+***
+
+### Star
+
+> **Star**: `"star"`
+
+***
+
+### StarCircle
+
+> **StarCircle**: `"star-circle"`
+
+***
+
+### StarDisabled
+
+> **StarDisabled**: `"star-disabled"`
+
+***
+
+### Stars
+
+> **Stars**: `"stars"`
+
+***
+
+### Stop
+
+> **Stop**: `"stop"`
+
+***
+
+### StopFilled
+
+> **StopFilled**: `"stop-filled"`
+
+***
+
+### Stopwatch
+
+> **Stopwatch**: `"stopwatch"`
+
+***
+
+### Store
+
+> **Store**: `"store"`
+
+***
+
+### StrikeThrough
+
+> **StrikeThrough**: `"strike-through"`
+
+***
+
+### Sun
+
+> **Sun**: `"sun"`
+
+***
+
+### Sunrise
+
+> **Sunrise**: `"sunrise"`
+
+***
+
+### Swatch
+
+> **Swatch**: `"swatch"`
+
+***
+
+### Switch
+
+> **Switch**: `"switch"`
+
+***
+
+### Syringe
+
+> **Syringe**: `"syringe"`
+
+***
+
+### Tag
+
+> **Tag**: `"tag"`
+
+***
+
+### Temperature
+
+> **Temperature**: `"temperature"`
+
+***
+
+### TennisBall
+
+> **TennisBall**: `"tennis-ball"`
+
+***
+
+### Terminal
+
+> **Terminal**: `"terminal"`
+
+***
+
+### Text
+
+> **Text**: `"text"`
+
+***
+
+### TextCursor
+
+> **TextCursor**: `"text-cursor"`
+
+***
+
+### ~~TextDocument~~
+
+> **TextDocument**: `"blank-document"`
+
+#### Deprecated
+
+Use [Icon.BlankDocument](#blankdocument) instead.
+
+***
+
+### TextInput
+
+> **TextInput**: `"text-input"`
+
+***
+
+### Torch
+
+> **Torch**: `"torch"`
+
+***
+
+### Train
+
+> **Train**: `"train"`
+
+***
+
+### Trash
+
+> **Trash**: `"trash"`
+
+***
+
+### Tray
+
+> **Tray**: `"tray"`
+
+***
+
+### Tree
+
+> **Tree**: `"tree"`
+
+***
+
+### Trophy
+
+> **Trophy**: `"trophy"`
+
+***
+
+### ~~TwoArrowsClockwise~~
+
+> **TwoArrowsClockwise**: `"arrow-clockwise"`
+
+#### Deprecated
+
+Use [Icon.ArrowClockwise](#arrowclockwise) instead.
+
+***
+
+### TwoPeople
+
+> **TwoPeople**: `"two-people"`
+
+***
+
+### Umbrella
+
+> **Umbrella**: `"umbrella"`
+
+***
+
+### Underline
+
+> **Underline**: `"underline"`
+
+***
+
+### Undo
+
+> **Undo**: `"undo"`
+
+***
+
+### Upload
+
+> **Upload**: `"upload"`
+
+***
+
+### Uppercase
+
+> **Uppercase**: `"uppercase"`
+
+***
+
+### Video
+
+> **Video**: `"video"`
+
+***
+
+### Wallet
+
+> **Wallet**: `"wallet"`
+
+***
+
+### Wand
+
+> **Wand**: `"wand"`
+
+***
+
+### Warning
+
+> **Warning**: `"warning"`
+
+***
+
+### Weights
+
+> **Weights**: `"weights"`
+
+***
+
+### Wifi
+
+> **Wifi**: `"wifi"`
+
+***
+
+### WifiDisabled
+
+> **WifiDisabled**: `"wifi-disabled"`
+
+***
+
+### Window
+
+> **Window**: `"app-window"`
+
+***
+
+### WrenchScrewdriver
+
+> **WrenchScrewdriver**: `"wrench-screwdriver"`
+
+***
+
+### WristWatch
+
+> **WristWatch**: `"wrist-watch"`
+
+***
+
+### ~~XmarkCircle~~
+
+> **XmarkCircle**: `"x-mark-circle"`
+
+#### Deprecated
+
+Use [Icon.XMarkCircle](#xmarkcircle-1) instead.
+
+***
+
+### XMarkCircle
+
+> **XMarkCircle**: `"x-mark-circle"`
+
+***
+
+### XMarkCircleFilled
+
+> **XMarkCircleFilled**: `"x-mark-circle-filled"`
+
+***
+
+### XMarkTopRightSquare
+
+> **XMarkTopRightSquare**: `"x-mark-top-right-square"`
+
+***
+
+### Zendesk
+
+> **Zendesk**: `"zendesk"`
+
+
+
+================================================
+FILE: typescript/api/docs/enumerations/LaunchType.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / LaunchType
+
+# Enumeration: LaunchType
+
+## Enumeration Members
+
+### Background
+
+> **Background**: `"background"`
+
+Scheduled through an interval and launched from background
+
+***
+
+### UserInitiated
+
+> **UserInitiated**: `"userInitiated"`
+
+A regular launch through user interaction
+
+
+
+================================================
+FILE: typescript/api/docs/enumerations/PopToRootType.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / PopToRootType
+
+# Enumeration: PopToRootType
+
+## Enumeration Members
+
+### Default
+
+> **Default**: `"default"`
+
+Translates to Immediate or Suspended depending on the
+user configuration.
+
+***
+
+### Immediate
+
+> **Immediate**: `"immediate"`
+
+Immediately pop to root
+
+***
+
+### Suspended
+
+> **Suspended**: `"suspended"`
+
+Do not pop to root, preserve the navigation state as it is
+
+
+
+================================================
+FILE: typescript/api/docs/functions/clearSearchBar.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / clearSearchBar
+
+# Function: clearSearchBar()
+
+> **clearSearchBar**(): `Promise`\<`void`\>
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/closeMainWindow.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / closeMainWindow
+
+# Function: closeMainWindow()
+
+> **closeMainWindow**(`options`): `Promise`\<`void`\>
+
+Close the vicinae launcher window immediately.
+It is possible to override the `popToRoot` behavior defined in the settings using the options object.
+
+## Parameters
+
+### options
+
+#### clearRootSearch?
+
+`boolean`
+
+#### popToRootType?
+
+[`PopToRootType`](../enumerations/PopToRootType.md)
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/confirmAlert.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / confirmAlert
+
+# Function: confirmAlert()
+
+> **confirmAlert**(`options`): `Promise`\<`boolean`\>
+
+## Parameters
+
+### options
+
+[`Options`](../@vicinae/namespaces/Alert/type-aliases/Options.md)
+
+## Returns
+
+`Promise`\<`boolean`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/getApplications.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / getApplications
+
+# Function: getApplications()
+
+> **getApplications**(`target?`): `Promise`\<[`Application`](../interfaces/Application.md)[]\>
+
+## Parameters
+
+### target?
+
+`string`
+
+## Returns
+
+`Promise`\<[`Application`](../interfaces/Application.md)[]\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/getDefaultApplication.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / getDefaultApplication
+
+# Function: getDefaultApplication()
+
+> **getDefaultApplication**(`path`): `Promise`\<[`Application`](../interfaces/Application.md)\>
+
+## Parameters
+
+### path
+
+`string`
+
+## Returns
+
+`Promise`\<[`Application`](../interfaces/Application.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/getFrontmostApplication.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / getFrontmostApplication
+
+# Function: getFrontmostApplication()
+
+> **getFrontmostApplication**(): `Promise`\<[`Application`](../interfaces/Application.md)\>
+
+## Returns
+
+`Promise`\<[`Application`](../interfaces/Application.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/getPreferenceValues.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / getPreferenceValues
+
+# Function: getPreferenceValues()
+
+> **getPreferenceValues**\<`T`\>(): `T`
+
+## Type Parameters
+
+### T
+
+`T` = \{\[`preferenceName`: `string`\]: `any`; \}
+
+## Returns
+
+`T`
+
+
+
+================================================
+FILE: typescript/api/docs/functions/getSelectedText.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / getSelectedText
+
+# Function: getSelectedText()
+
+> **getSelectedText**(): `Promise`\<`string`\>
+
+Get the text that is currently selected by the user.
+How this is implemented depends on the environment but all it does is usually
+read the clipboard's primary selection buffer.
+
+## Returns
+
+`Promise`\<`string`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/open.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / open
+
+# Function: open()
+
+> **open**(`target`, `app?`): `Promise`\<`void`\>
+
+## Parameters
+
+### target
+
+`string`
+
+### app?
+
+`string` | [`Application`](../interfaces/Application.md)
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/openCommandPreferences.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / openCommandPreferences
+
+# Function: openCommandPreferences()
+
+> **openCommandPreferences**(): `Promise`\<`void`\>
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/openExtensionPreferences.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / openExtensionPreferences
+
+# Function: openExtensionPreferences()
+
+> **openExtensionPreferences**(): `Promise`\<`void`\>
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/popToRoot.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / popToRoot
+
+# Function: popToRoot()
+
+> **popToRoot**(`options?`): `Promise`\<`void`\>
+
+Pop to the root of the navigation stack, optionally clearing the search bar.
+
+## Parameters
+
+### options?
+
+#### clearSearchBar?
+
+`boolean`
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/serializeColorLike.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / serializeColorLike
+
+# Function: serializeColorLike()
+
+> **serializeColorLike**(`color`): [`SerializedColorLike`](../type-aliases/SerializedColorLike.md)
+
+## Parameters
+
+### color
+
+[`ColorLike`](../type-aliases/ColorLike.md)
+
+## Returns
+
+[`SerializedColorLike`](../type-aliases/SerializedColorLike.md)
+
+
+
+================================================
+FILE: typescript/api/docs/functions/serializeProtoImage.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / serializeProtoImage
+
+# Function: serializeProtoImage()
+
+> **serializeProtoImage**(`image`): `Image`
+
+## Parameters
+
+### image
+
+[`ImageLike`](../@vicinae/namespaces/Image/type-aliases/ImageLike.md)
+
+## Returns
+
+`Image`
+
+
+
+================================================
+FILE: typescript/api/docs/functions/showHUD.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / showHUD
+
+# Function: showHUD()
+
+> **showHUD**(`title`, `options?`): `Promise`\<`void`\>
+
+Close the window and show a small HUD where the window was previously opened.
+Note that the HUD may not be shown in some environments.
+Similarly to `closeWindow`, it is possible to override the pop to root behavior directly
+by passing options to this function.
+
+## Parameters
+
+### title
+
+`string`
+
+### options?
+
+#### clearRootSearch?
+
+`boolean`
+
+#### popToRootType?
+
+[`PopToRootType`](../enumerations/PopToRootType.md)
+
+## Returns
+
+`Promise`\<`void`\>
+
+## See
+
+closeWindow
+
+
+
+================================================
+FILE: typescript/api/docs/functions/showInFileBrowser.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / showInFileBrowser
+
+# Function: showInFileBrowser()
+
+> **showInFileBrowser**(`path`): `Promise`\<`void`\>
+
+## Parameters
+
+### path
+
+`PathLike`
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/showToast.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / showToast
+
+# Function: showToast()
+
+> **showToast**(`init`, `title`, `message?`): `Promise`\<[`Toast`](../classes/Toast.md)\>
+
+## Parameters
+
+### init
+
+[`Style`](../@vicinae/namespaces/Toast/enumerations/Style.md) | [`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md)
+
+### title
+
+`string` = `""`
+
+### message?
+
+`string`
+
+## Returns
+
+`Promise`\<[`Toast`](../classes/Toast.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/trash.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / trash
+
+# Function: trash()
+
+> **trash**(`path`): `Promise`\<`void`\>
+
+## Parameters
+
+### path
+
+`PathLike` | `PathLike`[]
+
+## Returns
+
+`Promise`\<`void`\>
+
+
+
+================================================
+FILE: typescript/api/docs/functions/useApplications.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / useApplications
+
+# Function: useApplications()
+
+> **useApplications**(): \[[`Application`](../interfaces/Application.md)[], `boolean`, `null` \| `Error`\]
+
+## Returns
+
+\[[`Application`](../interfaces/Application.md)[], `boolean`, `null` \| `Error`\]
+
+
+
+================================================
+FILE: typescript/api/docs/functions/useNavigation.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / useNavigation
+
+# Function: useNavigation()
+
+> **useNavigation**(): `object`
+
+## Returns
+
+`object`
+
+### pop()
+
+> **pop**: () => `void`
+
+#### Returns
+
+`void`
+
+### push()
+
+> **push**: (`node`) => `void`
+
+#### Parameters
+
+##### node
+
+`ReactNode`
+
+#### Returns
+
+`void`
+
+
+
+================================================
+FILE: typescript/api/docs/interfaces/Application.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Application
+
+# Interface: Application
+
+## Properties
+
+### icon
+
+> **icon**: `string`
+
+***
+
+### id
+
+> **id**: `string`
+
+***
+
+### name
+
+> **name**: `string`
+
+***
+
+### path
+
+> **path**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/interfaces/Arguments.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Arguments
+
+# Interface: Arguments
+
+## Indexable
+
+\[`item`: `string`\]: `any`
+
+
+
+================================================
+FILE: typescript/api/docs/interfaces/Environment.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Environment
+
+# Interface: Environment
+
+## Properties
+
+### appearance
+
+> **appearance**: `"light"` \| `"dark"`
+
+The appearance used by the Raycast application.
+
+***
+
+### assetsPath
+
+> **assetsPath**: `string`
+
+The absolute path to the assets directory of the extension.
+
+#### Remarks
+
+This directory is used internally to load icons, images, and other bundled assets.
+
+***
+
+### commandMode
+
+> **commandMode**: `"menu-bar"` \| `"no-view"` \| `"view"`
+
+The mode of the launched command, as specified in package.json
+
+***
+
+### commandName
+
+> **commandName**: `string`
+
+The name of the launched command, as specified in package.json
+
+***
+
+### extensionName
+
+> **extensionName**: `string`
+
+The name of the extension, as specified in package.json
+
+***
+
+### isDevelopment
+
+> **isDevelopment**: `boolean`
+
+Indicates whether the command is a development command (vs. an installed command from the Store).
+
+***
+
+### isRaycast
+
+> **isRaycast**: `boolean`
+
+Whether we run an actual Raycast extension in compatibility mode.
+This is used internally to provide Raycast-compatible interfaces.
+
+***
+
+### ~~launchContext?~~
+
+> `optional` **launchContext**: [`LaunchContext`](LaunchContext.md)
+
+#### Deprecated
+
+Use the top-level prop `launchContext` instead.
+
+***
+
+### launchType
+
+> **launchType**: [`LaunchType`](../enumerations/LaunchType.md)
+
+The type of launch for the command (user initiated or background).
+
+***
+
+### raycastVersion
+
+> **raycastVersion**: `string`
+
+The version of the main Raycast app
+
+***
+
+### supportPath
+
+> **supportPath**: `string`
+
+The absolute path for the support directory of an extension. Use it to read and write files related to your extension or command.
+
+***
+
+### textSize
+
+> **textSize**: `"medium"` \| `"large"`
+
+The text size used by the Raycast application.
+
+***
+
+### ~~theme~~
+
+> **theme**: `"light"` \| `"dark"`
+
+The theme used by the Raycast application.
+
+#### Deprecated
+
+Use `appearance` instead
+
+***
+
+### vicinaeVersion
+
+> **vicinaeVersion**: `object`
+
+The Vicinae version. Vicinae extensions should rely on this and ignore `raycastVersion`.
+
+#### commit
+
+> **commit**: `string`
+
+#### tag
+
+> **tag**: `string`
+
+## Methods
+
+### canAccess()
+
+> **canAccess**(`api`): `boolean`
+
+Returns whether the user has access to the given API.
+
+#### Parameters
+
+##### api
+
+`unknown`
+
+#### Returns
+
+`boolean`
+
+#### Example
+
+```typescript
+import { unstableAI, environment } from "@raycast/api";
+
+export default function Command() {
+  if (environment.canAccess(unstableAI)) {
+    // use unstableAI
+  }
+}
+```
+
+
+
+================================================
+FILE: typescript/api/docs/interfaces/LaunchContext.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / LaunchContext
+
+# Interface: LaunchContext
+
+## Indexable
+
+\[`item`: `string`\]: `any`
+
+
+
+================================================
+FILE: typescript/api/docs/interfaces/ToastActionOptions.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ToastActionOptions
+
+# ~~Interface: ToastActionOptions~~
+
+## Deprecated
+
+Use [Toast.ActionOptions](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md) instead
+
+## Extends
+
+- [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+## Properties
+
+### ~~onAction()~~
+
+> **onAction**: (`toast`) => `void`
+
+A callback called when the action is triggered.
+
+#### Parameters
+
+##### toast
+
+[`Toast`](../classes/Toast.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md).[`onAction`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md#onaction)
+
+***
+
+### ~~shortcut?~~
+
+> `optional` **shortcut**: [`Shortcut`](../@vicinae/namespaces/Keyboard/type-aliases/Shortcut.md)
+
+The keyboard shortcut for the action.
+
+#### Inherited from
+
+[`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md).[`shortcut`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md#shortcut)
+
+***
+
+### ~~title~~
+
+> **title**: `string`
+
+The title of the action.
+
+#### Inherited from
+
+[`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md).[`title`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md#title)
+
+
+
+================================================
+FILE: typescript/api/docs/interfaces/ToastOptions.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ToastOptions
+
+# ~~Interface: ToastOptions~~
+
+## Deprecated
+
+Use [Toast.Options](../@vicinae/namespaces/Toast/interfaces/Options.md) instead
+
+## Extends
+
+- [`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md)
+
+## Properties
+
+### ~~message?~~
+
+> `optional` **message**: `string`
+
+An additional message for the Toast. Useful to show more information, e.g. an identifier of a newly created asset.
+
+#### Inherited from
+
+[`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md).[`message`](../@vicinae/namespaces/Toast/interfaces/Options.md#message)
+
+***
+
+### ~~primaryAction?~~
+
+> `optional` **primaryAction**: [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+The primary Action the user can take when hovering on the Toast.
+
+#### Inherited from
+
+[`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md).[`primaryAction`](../@vicinae/namespaces/Toast/interfaces/Options.md#primaryaction)
+
+***
+
+### ~~secondaryAction?~~
+
+> `optional` **secondaryAction**: [`ActionOptions`](../@vicinae/namespaces/Toast/interfaces/ActionOptions.md)
+
+The secondary Action the user can take when hovering on the Toast.
+
+#### Inherited from
+
+[`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md).[`secondaryAction`](../@vicinae/namespaces/Toast/interfaces/Options.md#secondaryaction)
+
+***
+
+### ~~style?~~
+
+> `optional` **style**: [`Style`](../@vicinae/namespaces/Toast/enumerations/Style.md)
+
+The style of a Toast.
+
+#### Inherited from
+
+[`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md).[`style`](../@vicinae/namespaces/Toast/interfaces/Options.md#style)
+
+***
+
+### ~~title~~
+
+> **title**: `string`
+
+The title of a Toast. Displayed on the top.
+
+#### Inherited from
+
+[`Options`](../@vicinae/namespaces/Toast/interfaces/Options.md).[`title`](../@vicinae/namespaces/Toast/interfaces/Options.md#title)
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionOpenInBrowserProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionOpenInBrowserProps
+
+# Type Alias: ActionOpenInBrowserProps
+
+> **ActionOpenInBrowserProps** = [`BaseActionProps`](BaseActionProps.md) & `object`
+
+## Type Declaration
+
+### url
+
+> **url**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionOpenProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionOpenProps
+
+# Type Alias: ActionOpenProps
+
+> **ActionOpenProps** = [`BaseActionProps`](BaseActionProps.md) & `object`
+
+## Type Declaration
+
+### app?
+
+> `optional` **app**: [`Application`](../interfaces/Application.md)
+
+### target
+
+> **target**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionPanelProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionPanelProps
+
+# Type Alias: ActionPanelProps
+
+> **ActionPanelProps** = `object`
+
+## Properties
+
+### children?
+
+> `optional` **children**: `ReactNode`
+
+***
+
+### title?
+
+> `optional` **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionPanelSectionProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionPanelSectionProps
+
+# Type Alias: ActionPanelSectionProps
+
+> **ActionPanelSectionProps** = `object`
+
+## Properties
+
+### children?
+
+> `optional` **children**: `ReactNode`
+
+***
+
+### title?
+
+> `optional` **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionPanelSubmenuProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionPanelSubmenuProps
+
+# Type Alias: ActionPanelSubmenuProps
+
+> **ActionPanelSubmenuProps** = `object`
+
+## Properties
+
+### children
+
+> **children**: `ReactNode`
+
+***
+
+### icon?
+
+> `optional` **icon**: [`ImageLike`](../@vicinae/namespaces/Image/type-aliases/ImageLike.md)
+
+***
+
+### onOpen()?
+
+> `optional` **onOpen**: () => `void`
+
+#### Returns
+
+`void`
+
+***
+
+### onSearchTextChange()?
+
+> `optional` **onSearchTextChange**: (`text`) => `void`
+
+#### Parameters
+
+##### text
+
+`string`
+
+#### Returns
+
+`void`
+
+***
+
+### shortcut?
+
+> `optional` **shortcut**: [`Shortcut`](../@vicinae/namespaces/Keyboard/type-aliases/Shortcut.md)
+
+***
+
+### title
+
+> **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionPasteProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionPasteProps
+
+# Type Alias: ActionPasteProps
+
+> **ActionPasteProps** = [`BaseActionProps`](BaseActionProps.md) & `object`
+
+## Type Declaration
+
+### content
+
+> **content**: `string`
+
+### onPaste()?
+
+> `optional` **onPaste**: (`content`) => `void`
+
+#### Parameters
+
+##### content
+
+`string` | `number` | [`Content`](../@vicinae/namespaces/Clipboard/type-aliases/Content.md)
+
+#### Returns
+
+`void`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionProps
+
+# Type Alias: ActionProps
+
+> **ActionProps** = [`BaseActionProps`](BaseActionProps.md) & `object`
+
+## Type Declaration
+
+### onAction()
+
+> **onAction**: () => `void`
+
+#### Returns
+
+`void`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionPushProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionPushProps
+
+# Type Alias: ActionPushProps
+
+> **ActionPushProps** = [`BaseActionProps`](BaseActionProps.md) & `object`
+
+## Type Declaration
+
+### target
+
+> **target**: `ReactNode`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ActionSubmitFormProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionSubmitFormProps
+
+# Type Alias: ActionSubmitFormProps
+
+> **ActionSubmitFormProps** = `Omit`\<[`BaseActionProps`](BaseActionProps.md), `"title"`\> & `object`
+
+## Type Declaration
+
+### onSubmit()
+
+> **onSubmit**: (`input`) => `boolean` \| `void` \| `Promise`\<`boolean` \| `void`\>
+
+#### Parameters
+
+##### input
+
+[`Values`](../@vicinae/namespaces/Form/type-aliases/Values.md)
+
+#### Returns
+
+`boolean` \| `void` \| `Promise`\<`boolean` \| `void`\>
+
+### title?
+
+> `optional` **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/BaseActionProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / BaseActionProps
+
+# Type Alias: BaseActionProps
+
+> **BaseActionProps** = `object`
+
+## Properties
+
+### autoFocus?
+
+> `optional` **autoFocus**: `boolean`
+
+***
+
+### icon?
+
+> `optional` **icon**: [`ImageLike`](ImageLike.md)
+
+***
+
+### shortcut?
+
+> `optional` **shortcut**: [`Shortcut`](../@vicinae/namespaces/Keyboard/type-aliases/Shortcut.md)
+
+***
+
+### style?
+
+> `optional` **style**: `"regular"` \| `"destructive"`
+
+***
+
+### title
+
+> **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ColorLike.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ColorLike
+
+# Type Alias: ColorLike
+
+> **ColorLike** = [`Dynamic`](../@vicinae/namespaces/Color/type-aliases/Dynamic.md) \| [`Raw`](../@vicinae/namespaces/Color/type-aliases/Raw.md) \| [`Color`](../enumerations/Color.md)
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/CopyToClipboardProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / CopyToClipboardProps
+
+# Type Alias: CopyToClipboardProps
+
+> **CopyToClipboardProps** = `Omit`\<[`BaseActionProps`](BaseActionProps.md), `"title"`\> & `object`
+
+## Type Declaration
+
+### concealed?
+
+> `optional` **concealed**: `boolean`
+
+### content
+
+> **content**: `string`
+
+### onCopy()?
+
+> `optional` **onCopy**: (`content`) => `void`
+
+#### Parameters
+
+##### content
+
+`string` | `number` | [`Content`](../@vicinae/namespaces/Clipboard/type-aliases/Content.md)
+
+#### Returns
+
+`void`
+
+### title?
+
+> `optional` **title**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/DetailProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / DetailProps
+
+# Type Alias: DetailProps
+
+> **DetailProps** = `object`
+
+## Properties
+
+### actions?
+
+> `optional` **actions**: `ReactNode`
+
+***
+
+### markdown
+
+> **markdown**: `string`
+
+***
+
+### metadata?
+
+> `optional` **metadata**: `ReactNode`
+
+***
+
+### navigationTitle?
+
+> `optional` **navigationTitle**: `string`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/FormItemRef.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / FormItemRef
+
+# Type Alias: FormItemRef
+
+> **FormItemRef** = `object`
+
+## Properties
+
+### focus()
+
+> **focus**: () => `void`
+
+#### Returns
+
+`void`
+
+***
+
+### reset()
+
+> **reset**: () => `void`
+
+#### Returns
+
+`void`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/Image.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Image
+
+# Type Alias: Image
+
+> **Image** = `object`
+
+## Properties
+
+### fallback?
+
+> `optional` **fallback**: [`Fallback`](../@vicinae/namespaces/Image/type-aliases/Fallback.md)
+
+***
+
+### mask?
+
+> `optional` **mask**: [`Mask`](../@vicinae/namespaces/Image/enumerations/Mask.md)
+
+***
+
+### source
+
+> **source**: [`Source`](../@vicinae/namespaces/Image/type-aliases/Source.md)
+
+***
+
+### tintColor?
+
+> `optional` **tintColor**: [`Color`](../enumerations/Color.md)
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/ImageLike.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ImageLike
+
+# Type Alias: ImageLike
+
+> **ImageLike** = [`ImageLike`](../@vicinae/namespaces/Image/type-aliases/ImageLike.md)
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/KeyEquivalent.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / KeyEquivalent
+
+# Type Alias: KeyEquivalent
+
+> **KeyEquivalent** = `"a"` \| `"b"` \| `"c"` \| `"d"` \| `"e"` \| `"f"` \| `"g"` \| `"h"` \| `"i"` \| `"j"` \| `"k"` \| `"l"` \| `"m"` \| `"n"` \| `"o"` \| `"p"` \| `"q"` \| `"r"` \| `"s"` \| `"t"` \| `"u"` \| `"v"` \| `"w"` \| `"x"` \| `"y"` \| `"z"` \| `"0"` \| `"1"` \| `"2"` \| `"3"` \| `"4"` \| `"5"` \| `"6"` \| `"7"` \| `"8"` \| `"9"` \| `"."` \| `","` \| `";"` \| `"="` \| `"+"` \| `"-"` \| `"["` \| `"]"` \| `"{"` \| `"}"` \| `"«"` \| `"»"` \| `"("` \| `")"` \| `"/"` \| "\\" \| `"'"` \| `` "`" `` \| `"§"` \| `"^"` \| `"@"` \| `"$"` \| `"return"` \| `"delete"` \| `"deleteForward"` \| `"tab"` \| `"arrowUp"` \| `"arrowDown"` \| `"arrowLeft"` \| `"arrowRight"` \| `"pageUp"` \| `"pageDown"` \| `"home"` \| `"end"` \| `"space"` \| `"escape"` \| `"enter"` \| `"backspace"`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/KeyModifier.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / KeyModifier
+
+# Type Alias: KeyModifier
+
+> **KeyModifier** = `"cmd"` \| `"ctrl"` \| `"opt"` \| `"shift"`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/LaunchProps.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / LaunchProps
+
+# Type Alias: LaunchProps\<T\>
+
+> **LaunchProps**\<`T`\> = `object`
+
+## Type Parameters
+
+### T
+
+`T` *extends* `object` = \{ `arguments`: [`Arguments`](../interfaces/Arguments.md); `draftValues`: [`Values`](../@vicinae/namespaces/Form/type-aliases/Values.md); `launchContext?`: [`LaunchContext`](../interfaces/LaunchContext.md); \}
+
+## Properties
+
+### arguments
+
+> **arguments**: `T`\[`"arguments"`\]
+
+Use these values to populate the initial state for your command.
+
+***
+
+### draftValues?
+
+> `optional` **draftValues**: `T`\[`"draftValues"`\]
+
+When a user enters the command via a draft, this object will contain the user inputs that were saved as a draft.
+Use its values to populate the initial state for your Form.
+
+***
+
+### fallbackText?
+
+> `optional` **fallbackText**: `string`
+
+When the command is launched as a fallback command, this string contains the text of the root search.
+
+***
+
+### launchContext?
+
+> `optional` **launchContext**: `T`\[`"launchContext"`\]
+
+When the command is launched programmatically via `launchCommand`, this object contains the value passed to `context`.
+
+***
+
+### launchType
+
+> **launchType**: [`LaunchType`](../enumerations/LaunchType.md)
+
+The type of launch for the command (user initiated or background).
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/Message.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Message
+
+# Type Alias: Message\<T\>
+
+> **Message**\<`T`\> = `object`
+
+## Type Parameters
+
+### T
+
+`T` = `Record`\<`string`, `any`\>
+
+## Properties
+
+### data
+
+> **data**: `T`
+
+***
+
+### envelope
+
+> **envelope**: `object`
+
+#### action
+
+> **action**: `string`
+
+#### id
+
+> **id**: `string`
+
+#### type
+
+> **type**: `"request"` \| `"response"` \| `"event"`
+
+***
+
+### error
+
+> **error**: \{ `message?`: `string`; \} \| `null`
+
+
+
+================================================
+FILE: typescript/api/docs/type-aliases/SerializedColorLike.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / SerializedColorLike
+
+# Type Alias: SerializedColorLike
+
+> **SerializedColorLike** = [`Dynamic`](../@vicinae/namespaces/Color/type-aliases/Dynamic.md) \| `string`
+
+
+
+================================================
+FILE: typescript/api/docs/variables/Action.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Action
+
+# Variable: Action
+
+> `const` **Action**: `FC`\<[`ActionProps`](../type-aliases/ActionProps.md)\> & `object`
+
+## Type Declaration
+
+### CopyToClipboard
+
+> **CopyToClipboard**: `FC`\<[`CopyToClipboardProps`](../type-aliases/CopyToClipboardProps.md)\>
+
+### Open
+
+> **Open**: `FC`\<[`ActionOpenProps`](../type-aliases/ActionOpenProps.md)\>
+
+### OpenInBrowser
+
+> **OpenInBrowser**: `FC`\<[`ActionOpenInBrowserProps`](../type-aliases/ActionOpenInBrowserProps.md)\>
+
+### Paste
+
+> **Paste**: `FC`\<[`ActionPasteProps`](../type-aliases/ActionPasteProps.md)\>
+
+### Push
+
+> **Push**: `FC`\<[`ActionPushProps`](../type-aliases/ActionPushProps.md)\>
+
+### Style
+
+> **Style**: `object`
+
+#### Style.Destructive
+
+> **Destructive**: `"destructive"` = `"destructive"`
+
+#### Style.Regular
+
+> **Regular**: `"regular"` = `"regular"`
+
+### SubmitForm
+
+> **SubmitForm**: `FC`\<[`ActionSubmitFormProps`](../type-aliases/ActionSubmitFormProps.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/variables/ActionPanel.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ActionPanel
+
+# Variable: ActionPanel
+
+> `const` **ActionPanel**: `FC`\<[`ActionPanelProps`](../type-aliases/ActionPanelProps.md)\> & `object`
+
+## Type Declaration
+
+### Section
+
+> **Section**: `FC`\<`PropsWithChildren`\<[`ActionPanelSectionProps`](../type-aliases/ActionPanelSectionProps.md)\>\> = `ActionPanelSection`
+
+### Submenu
+
+> **Submenu**: `FC`\<[`ActionPanelSubmenuProps`](../type-aliases/ActionPanelSubmenuProps.md)\> = `ActionPannelSubmenu`
+
+
+
+================================================
+FILE: typescript/api/docs/variables/Application.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Application
+
+# Variable: Application
+
+> **Application**: `MessageFns`\<[`Application`](../interfaces/Application.md)\>
+
+
+
+================================================
+FILE: typescript/api/docs/variables/bus.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / bus
+
+# Variable: bus
+
+> `const` **bus**: `Bus`
+
+IPC bus to communicate with the extension manager.
+If you are using this from inside your extension, you are WRONG and you should stop.
+
+
+
+================================================
+FILE: typescript/api/docs/variables/Detail.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Detail
+
+# Variable: Detail
+
+> `const` **Detail**: `FC`\<[`DetailProps`](../type-aliases/DetailProps.md)\> & `object`
+
+## Type Declaration
+
+### Metadata
+
+> **Metadata**: `FC`\<`MetadataProps`\> & `object`
+
+#### Type Declaration
+
+##### Label
+
+> **Label**: `FC`\<`ListItemDetailMetadataLabelProps`\> = `MetadataLabel`
+
+##### Link
+
+> **Link**: `FC`\<\{ `target`: `string`; `text`: `string`; `title`: `string`; \}\> = `MetadataLink`
+
+##### Separator
+
+> **Separator**: `FC`\<\{ \}\> = `MetadataSeparator`
+
+##### TagList
+
+> **TagList**: `FC`\<`TagListProps`\> & `object`
+
+###### Type Declaration
+
+###### Item
+
+> **Item**: `FC`\<`TagItemProps`\> = `TagItem`
+
+
+
+================================================
+FILE: typescript/api/docs/variables/environment.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / environment
+
+# Variable: environment
+
+> `const` **environment**: [`Environment`](../interfaces/Environment.md)
+
+
+
+================================================
+FILE: typescript/api/docs/variables/Form.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Form
+
+# Variable: Form
+
+> **Form**: `FC`\<`FormProps`\> & `object`
+
+## Type Declaration
+
+### Checkbox
+
+> **Checkbox**: `FC`\<`CheckboxProps`\>
+
+### DatePicker
+
+> **DatePicker**: `FC`\<`DatePickerProps`\>
+
+### Description
+
+> **Description**: `FC`\<`DescriptionProps`\>
+
+### Dropdown
+
+> **Dropdown**: `FC`\<`DropdownProps`\> & `object`
+
+#### Type Declaration
+
+##### Item
+
+> **Item**: `FC`\<`DropdownItemProps`\> = `MainDropdown.Item`
+
+##### Section
+
+> **Section**: `FC`\<`DropdownSectionProps`\> = `MainDropdown.Section`
+
+### FilePicker
+
+> **FilePicker**: `FC`\<`FilePickerProps`\>
+
+### PasswordField
+
+> **PasswordField**: `FC`\<`PasswordFieldProps`\>
+
+### Separator()
+
+> **Separator**: () => `Element`
+
+#### Returns
+
+`Element`
+
+### TagPicker
+
+> **TagPicker**: `FC`\<`TagPickerProps`\> & `object`
+
+#### Type Declaration
+
+##### Item
+
+> **Item**: `FC`\<\{ `icon`: [`ImageLike`](../@vicinae/namespaces/Image/type-aliases/ImageLike.md); `title`: `string`; `value`: `string`; \}\> = `TagPickerItem`
+
+### TextArea
+
+> **TextArea**: `FC`\<`TextAreaProps`\>
+
+### TextField
+
+> **TextField**: `FC`\<`TextFieldProps`\>
+
+
+
+================================================
+FILE: typescript/api/docs/variables/Grid.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Grid
+
+# Variable: Grid
+
+> **Grid**: `FC`\<[`Props`](../@vicinae/namespaces/Grid/type-aliases/Props.md)\> & `object`
+
+## Type Declaration
+
+### Dropdown
+
+> **Dropdown**: `FC`\<`DropdownProps`\> & `object`
+
+#### Type Declaration
+
+##### Item
+
+> **Item**: `FC`\<`DropdownItemProps`\>
+
+##### Section
+
+> **Section**: `FC`\<`DropdownSectionProps`\>
+
+### EmptyView
+
+> **EmptyView**: `FC`\<`EmptyViewProps`\>
+
+### Fit
+
+> **Fit**: *typeof* `GridFit` = `GridFit`
+
+### Inset
+
+> **Inset**: *typeof* `GridInset` = `GridInset`
+
+### Item
+
+> **Item**: `FC`\<[`Props`](../@vicinae/namespaces/Grid/namespaces/Item/type-aliases/Props.md)\>
+
+### Section
+
+> **Section**: `FC`\<[`Props`](../@vicinae/namespaces/Grid/namespaces/Section/type-aliases/Props.md)\> = `GridSection`
+
+
+
+================================================
+FILE: typescript/api/docs/variables/Keyboard.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / Keyboard
+
+# Variable: Keyboard
+
+> **Keyboard**: `object`
+
+## Type Declaration
+
+### Shortcut
+
+> **Shortcut**: `object`
+
+#### Shortcut.Common
+
+> **Common**: `object`
+
+#### Shortcut.Common.Copy
+
+> **Copy**: [`Shortcut`](../@vicinae/namespaces/Keyboard/type-aliases/Shortcut.md)
+
+#### Shortcut.Common.CopyName
+
+> **CopyName**: [`Shortcut`](../@vicinae/namespaces/Keyboard/type-aliases/Shortcut.md)
+
+
+
+================================================
+FILE: typescript/api/docs/variables/List.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / List
+
+# Variable: List
+
+> **List**: `FC`\<[`Props`](../@vicinae/namespaces/List/type-aliases/Props.md)\> & `object`
+
+## Type Declaration
+
+### Dropdown
+
+> **Dropdown**: `FC`\<`DropdownProps`\> & `object`
+
+#### Type Declaration
+
+##### Item
+
+> **Item**: `FC`\<`DropdownItemProps`\>
+
+##### Section
+
+> **Section**: `FC`\<`DropdownSectionProps`\>
+
+### EmptyView
+
+> **EmptyView**: `FC`\<`EmptyViewProps`\>
+
+### Item
+
+> **Item**: `FC`\<[`Props`](../@vicinae/namespaces/List/namespaces/Item/type-aliases/Props.md)\> & `object`
+
+#### Type Declaration
+
+##### Detail
+
+> **Detail**: `FC`\<[`Props`](../@vicinae/namespaces/List/namespaces/Item/namespaces/Detail/type-aliases/Props.md)\> & `object`
+
+###### Type Declaration
+
+###### Metadata
+
+> **Metadata**: `FC`\<`MetadataProps`\> & `object`
+
+###### Type Declaration
+
+###### Label
+
+> **Label**: `FC`\<`ListItemDetailMetadataLabelProps`\> = `MetadataLabel`
+
+###### Link
+
+> **Link**: `FC`\<\{ `target`: `string`; `text`: `string`; `title`: `string`; \}\> = `MetadataLink`
+
+###### Separator
+
+> **Separator**: `FC`\<\{ \}\> = `MetadataSeparator`
+
+###### TagList
+
+> **TagList**: `FC`\<`TagListProps`\> & `object`
+
+###### Type Declaration
+
+###### Item
+
+> **Item**: `FC`\<...\> = `TagItem`
+
+### Section
+
+> **Section**: `FC`\<[`Props`](../@vicinae/namespaces/List/namespaces/Section/type-aliases/Props.md)\> = `ListSection`
+
+
+
+================================================
+FILE: typescript/api/docs/variables/MenuBarExtra.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / MenuBarExtra
+
+# Variable: MenuBarExtra
+
+> `const` **MenuBarExtra**: `FC`\<`MenuBarExtraProps`\> & `object`
+
+## Type Declaration
+
+### Item
+
+> **Item**: `FC`\<`MenuBarExtraItemProps`\>
+
+### Section
+
+> **Section**: `FC`\<`any`\>
+
+### Separator
+
+> **Separator**: `FC`\<`any`\>
+
+### Submenu
+
+> **Submenu**: `FC`\<`any`\>
+
+
+
+================================================
+FILE: typescript/api/docs/variables/NavigationProvider.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / NavigationProvider
+
+# Variable: NavigationProvider
+
+> `const` **NavigationProvider**: `React.FC`\<\{ `root`: `ReactNode`; \}\>
+
+
+
+================================================
+FILE: typescript/api/docs/variables/OAuth.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / OAuth
+
+# Variable: OAuth
+
+> **OAuth**: `object`
+
+## Type Declaration
+
+### PKCEClient
+
+> **PKCEClient**: *typeof* [`PKCEClient`](../classes/PKCEClient.md)
+
+### RedirectMethod
+
+> **RedirectMethod**: *typeof* `OauthRedirectMethod` = `OauthRedirectMethod`
+
+### TokenSet
+
+> **TokenSet**: *typeof* `TokenSet`
+
+
+
+================================================
+FILE: typescript/api/docs/variables/ToastStyle.md
+================================================
+[**@vicinae/api**](../README.md)
+
+***
+
+[@vicinae/api](../README.md) / ToastStyle
+
+# ~~Variable: ToastStyle~~
+
+> `const` **ToastStyle**: *typeof* [`Style`](../@vicinae/namespaces/Toast/enumerations/Style.md)
+
+## Deprecated
+
+Use [Toast.Style](../@vicinae/namespaces/Toast/enumerations/Style.md) instead
+
+
