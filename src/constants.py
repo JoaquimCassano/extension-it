@@ -9,6 +9,7 @@ Additional instructions:
 - The OAUTH integration does NOT work. Instead, create a authentication flow yourself using the settings and local storage. It doesn't need to be complex like PKCE.
 - the AI features are also not available. instead, use Openai's sdk.
 - consider the extension will be running in linux.
+- remember to use localstorage whenever the app needs persistent data.
 """
 
 PLACEHOLDER_IMAGE_PATH = "assets/placeholder_image.png"
